@@ -18,7 +18,16 @@ export class TaskService {
   }
 
   findAll(): Promise<Task[]> {
-    return this.taskRepo.find({ relations: ['wbsItem', 'predecessors', 'successors'] });
+    return this.taskRepo.find({ relations: ['wbsItem'] });
+  }
+  /** 根据项目ID获取任务 */
+  findByProject(projectId: number): Promise<Task[]> {
+    return this.taskRepo.find({
+      relations: ['wbsItem', 'predecessors', 'successors'],
+      where: {
+        wbsItem: { project: { id: projectId } },
+      },
+    });
   }
 
   async findOne(id: number): Promise<Task> {

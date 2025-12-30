@@ -13,7 +13,14 @@ export class WbsItemService {
   ) {}
 
   async create(createDto: CreateWbsItemDto): Promise<WbsItem> {
-    const entity = this.wbsRepo.create(createDto);
+    const entity = this.wbsRepo.create();
+    entity.name = createDto.name;
+    entity.description = createDto.description;
+    entity.duration = createDto.duration;
+    entity.projectId = createDto.projectId;
+    if (createDto.parentId !== undefined) {
+      entity.parentId = createDto.parentId;
+    }
     return this.wbsRepo.save(entity);
   }
 

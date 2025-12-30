@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { WbsItem } from '../../wbs-item/entities/wbs-item.entity';
 import { Dependency } from '../../dependency/dependency.entity';
 import { ScheduleItem } from '../../schedule/schedule-item.entity';
@@ -9,15 +9,16 @@ export class Task {
   id: number;
 
   @ManyToOne(() => WbsItem, (item) => item.tasks)
+  @JoinColumn({ name: 'wbs_item_id' })
   wbsItem: WbsItem;
 
   @Column({ length: 255 })
   name: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ name: 'start_date', type: 'date', nullable: true })
   startDate: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ name: 'end_date', type: 'date', nullable: true })
   endDate: string;
 
   @Column('int', { nullable: true })
@@ -26,7 +27,7 @@ export class Task {
   @Column({ type: 'enum', enum: ['not_started','in_progress','completed','on_hold'], default: 'not_started' })
   status: string;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
+  @Column('decimal', { name: 'percent_complete', precision: 5, scale: 2, default: 0 })
   percentComplete: number;
 
   @OneToMany(() => Dependency, (dep) => dep.task)

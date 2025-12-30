@@ -33,8 +33,8 @@ export class ScoreService {
       timeScore = Math.max(0, 15 - dec);
     }
     // 提前交付
-    if (dto.earlyDeliveryDays > 0 && foundation >= 55) {
-      const bonus = Math.min(Math.floor(dto.earlyDeliveryDays / dto.baselineDays * 10) * 5, 20);
+    if ((dto.earlyDeliveryDays ?? 0) > 0 && foundation >= 55) {
+      const bonus = Math.min(Math.floor((dto.earlyDeliveryDays! / dto.baselineDays!) * 10) * 5, 20);
       timeScore = Math.min(15 + bonus, 15 + 20);
     }
 

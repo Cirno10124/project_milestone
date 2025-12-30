@@ -3,10 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ScheduleRun } from '../schedule-run.entity';
 import { ScheduleItem } from '../schedule-item.entity';
-import { CreateScheduleRunDto } from '../../dto/create-schedule-run.dto';
-import { UpdateScheduleRunDto } from '../../dto/update-schedule-run.dto';
-import { CreateScheduleItemDto } from '../../dto/create-schedule-item.dto';
-import { UpdateScheduleItemDto } from '../../dto/update-schedule-item.dto';
+import { CreateScheduleRunDto } from '../dto/create-schedule-run.dto';
+import { UpdateScheduleRunDto } from '../dto/update-schedule-run.dto';
+import { CreateScheduleItemDto } from '../dto/create-schedule-item.dto';
+import { UpdateScheduleItemDto } from '../dto/update-schedule-item.dto';
 import { Project } from '../../project/entities/project.entity';
 import { Task } from '../../task/entities/task.entity';
 
@@ -86,7 +86,7 @@ export class ScheduleService {
     projTasks.forEach(t => { inDegree.set(t.id, t.predecessors.length); nextMap.set(t.id, []); });
     projTasks.forEach(t => {
       t.predecessors.forEach(dep => {
-        nextMap.get(dep.predecessor.id).push(t.id);
+        nextMap.get(dep.predecessor.id)!.push(t.id);
       });
     });
     const es = new Map<number, Date>(); const ef = new Map<number, Date>();
@@ -95,18 +95,18 @@ export class ScheduleService {
       es.set(t.id, new Date(baseDate));
       ef.set(t.id, new Date(baseDate.getTime() + (t.duration || 0) * 86400000));
     });
-    const queue = projTasks.filter(t => inDegree.get(t.id) === 0).map(t => t.id);
+    const queue = projTasks.filter(t => inDegree.get(t.id)! === 0).map(t => t.id);
     while (queue.length) {
-      const id = queue.shift();
-      const t = projTasks.find(x => x.id === id);
-      const tES = es.get(id);
+      const id = queue.shift()!;
+      const t = projTasks.find(x => x.id === id)!;
+      const tES = es.get(id)!;
       const tEF = new Date(tES.getTime() + (t.duration || 0) * 86400000);
       ef.set(id, tEF);
-      nextMap.get(id).forEach(nid => {
-        const prevES = es.get(nid);
+      nextMap.get(id)!.forEach(nid => {
+        const prevES = es.get(nid)!;
         if (tEF > prevES) es.set(nid, tEF);
-        inDegree.set(nid, inDegree.get(nid) - 1);
-        if (inDegree.get(nid) === 0) queue.push(nid);
+        inDegree.set(nid, inDegree.get(nid)! - 1);
+        if (inDegree.get(nid)! === 0) queue.push(nid);
       });
     }
     const maxEF = new Date(Math.max(...Array.from(ef.values()).map(d => d.getTime())));
@@ -116,9 +116,9 @@ export class ScheduleService {
       ls.set(t.id, new Date(maxEF.getTime() - (t.duration || 0) * 86400000));
     });
     projTasks.slice().reverse().forEach(t => {
-      nextMap.get(t.id).forEach(nid => {
-        const childLS = ls.get(nid);
-        if (childLS < lf.get(t.id)) {
+      nextMap.get(t.id)!.forEach(nid => {
+        const childLS = ls.get(nid)!;
+        if (childLS < lf.get(t.id)!) {
           lf.set(t.id, childLS);
           ls.set(t.id, new Date(childLS.getTime() - (t.duration || 0) * 86400000));
         }
@@ -131,7 +131,7 @@ export class ScheduleService {
         task: t,
         earlyStart: es.get(t.id), earlyFinish: ef.get(t.id),
         lateStart: ls.get(t.id), lateFinish: lf.get(t.id),
-        slack: Math.round((ls.get(t.id).getTime() - es.get(t.id).getTime()) / 86400000),
+        slack: Math.round((ls.get(t.id)!.getTime() - es.get(t.id)!.getTime()) / 86400000),
       } as any);
     }
     return run;

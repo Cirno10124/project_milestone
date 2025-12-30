@@ -3,8 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DependencyService } from './dependency.service';
 import { Dependency } from '../dependency.entity';
-import { CreateDependencyDto } from '../../dto/create-dependency.dto';
-import { UpdateDependencyDto } from '../../dto/update-dependency.dto';
+import { CreateDependencyDto } from '../dto/create-dependency.dto';
+import { UpdateDependencyDto } from '../dto/update-dependency.dto';
 
 describe('DependencyService', () => {
   let service: DependencyService;

@@ -12,10 +12,10 @@ export class Project {
   @Column('text', { nullable: true })
   description: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ name: 'start_date', type: 'date', nullable: true })
   startDate: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ name: 'end_date', type: 'date', nullable: true })
   endDate: string;
 
   @OneToMany(() => WbsItem, (item) => item.project)

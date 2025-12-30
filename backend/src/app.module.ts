@@ -9,9 +9,10 @@ import { TaskModule } from './modules/task/task.module';
 import { DependencyModule } from './modules/dependency/dependency.module';
 import { ScheduleModule } from './modules/schedule/schedule.module';
 import { ScoreModule } from './modules/score/score.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forRoot(typeOrmConfig), ProjectModule, WbsItemModule, TaskModule, DependencyModule, ScheduleModule, ScoreModule],
+  imports: [TypeOrmModule.forRoot(typeOrmConfig), AuthModule, ProjectModule, WbsItemModule, TaskModule, DependencyModule, ScheduleModule, ScoreModule],
   controllers: [AppController],
   providers: [AppService],
 })

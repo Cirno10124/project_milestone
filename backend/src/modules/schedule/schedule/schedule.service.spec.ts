@@ -6,6 +6,10 @@ import { Project } from '../../project/entities/project.entity';
 import { Task } from '../../task/entities/task.entity';
 import { ScheduleRun } from '../schedule-run.entity';
 import { ScheduleItem } from '../schedule-item.entity';
+import { CreateScheduleRunDto } from '../dto/create-schedule-run.dto';
+import { UpdateScheduleRunDto } from '../dto/update-schedule-run.dto';
+import { CreateScheduleItemDto } from '../dto/create-schedule-item.dto';
+import { UpdateScheduleItemDto } from '../dto/update-schedule-item.dto';
 
 describe('ScheduleService', () => {
   let service: ScheduleService;

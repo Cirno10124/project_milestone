@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { Project } from '../../project/entities/project.entity';
 import { Task } from '../../task/entities/task.entity';
 
@@ -7,10 +7,16 @@ export class WbsItem {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ name: 'project_id' })
+  projectId: number;
   @ManyToOne(() => Project, (project) => project.wbsItems)
+  @JoinColumn({ name: 'project_id' })
   project: Project;
 
+  @Column({ name: 'parent_id', nullable: true })
+  parentId?: number;
   @ManyToOne(() => WbsItem, (parent) => parent.children, { nullable: true })
+  @JoinColumn({ name: 'parent_id' })
   parent: WbsItem;
 
   @OneToMany(() => WbsItem, (child) => child.parent)

@@ -1,4 +1,16 @@
 -- 数据库初始化脚本：创建表与审计触发器
+-- 先删除已有表以重新创建（按依赖顺序）
+DROP TABLE IF EXISTS project_share;
+DROP TABLE IF EXISTS group_member;
+DROP TABLE IF EXISTS `group`;
+DROP TABLE IF EXISTS user_account;
+DROP TABLE IF EXISTS audit_log;
+DROP TABLE IF EXISTS schedule_item;
+DROP TABLE IF EXISTS schedule_run;
+DROP TABLE IF EXISTS dependency;
+DROP TABLE IF EXISTS task;
+DROP TABLE IF EXISTS wbs_item;
+DROP TABLE IF EXISTS project;
 
 -- 创建项目表
 CREATE TABLE project (
@@ -47,7 +59,7 @@ CREATE TABLE dependency (
   task_id BIGINT NOT NULL,
   predecessor_id BIGINT NOT NULL,
   type ENUM('FS','SS','FF','SF') DEFAULT 'FS' COMMENT '依赖类型',
-  lag INT DEFAULT 0 COMMENT '滞后天数',
+  `lag` INT DEFAULT 0 COMMENT '滞后天数',
   FOREIGN KEY (task_id) REFERENCES task(id),
   FOREIGN KEY (predecessor_id) REFERENCES task(id)
 );

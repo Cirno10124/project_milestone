@@ -3,9 +3,15 @@ import { login as loginApi, register as registerApi, getProfile } from '../api/a
 import { ref } from 'vue';
 import router from '../router';
 
+// 用户信息类型定义
+interface User {
+  id: number;
+  username: string;
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('token') || '');
-  const user = ref<any>(null);
+  const user = ref<User | null>(null);
 
   function setToken(t: string) {
     token.value = t;
@@ -26,10 +32,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function register(credentials: { username: string; password: string }) {
-    const res = await registerApi(credentials);
-    setToken(res.data.token);
-    await fetchUser();
-    router.push('/projects');
+    await registerApi(credentials);
+    // 注册完成后跳转到登录页，用户需手动登录
+    router.push('/auth/login');
   }
 
   async function fetchUser() {

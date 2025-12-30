@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, Query } from '@nestjs/common';
 import { TaskService } from './task.service';
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { UpdateTaskDto } from '../dto/update-task.dto';
@@ -13,7 +13,10 @@ export class TaskController {
   }
 
   @Get()
-  findAll() {
+  findAll(@Query('projectId') projectId?: string) {
+    if (projectId) {
+      return this.taskService.findByProject(+projectId);
+    }
     return this.taskService.findAll();
   }
 

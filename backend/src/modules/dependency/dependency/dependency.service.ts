@@ -2,8 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Dependency } from '../dependency.entity';
-import { CreateDependencyDto } from '../../dto/create-dependency.dto';
-import { UpdateDependencyDto } from '../../dto/update-dependency.dto';
+import { CreateDependencyDto } from '../dto/create-dependency.dto';
+import { UpdateDependencyDto } from '../dto/update-dependency.dto';
 
 @Injectable()
 export class DependencyService {

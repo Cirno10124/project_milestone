@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, JoinColumn } from 'typeorm';
 import { Project } from '../project/entities/project.entity';
 import { ScheduleItem } from './schedule-item.entity';
 
@@ -8,12 +8,13 @@ export class ScheduleRun {
   id: number;
 
   @ManyToOne(() => Project)
+  @JoinColumn({ name: 'project_id' })
   project: Project;
 
-  @Column({ type: 'enum', enum: ['initial','rolling'], default: 'initial' })
+  @Column({ name: 'run_type', type: 'enum', enum: ['initial','rolling'], default: 'initial' })
   runType: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'executed_at' })
   executedAt: Date;
 
   @OneToMany(() => ScheduleItem, (item) => item.scheduleRun)

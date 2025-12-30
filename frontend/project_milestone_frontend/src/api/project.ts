@@ -26,3 +26,11 @@ export function shareProject(dto: ShareProjectDto) {
     role: dto.role,
   });
 }
+
+/**
+ * 创建新项目
+ * @param dto 包含 name 和 description
+ */
+export function createProject(dto: { name: string; description?: string }) {
+  return http.post<ProjectDto>('/projects', dto);
+}
