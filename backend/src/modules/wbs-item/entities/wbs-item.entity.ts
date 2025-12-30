@@ -30,6 +30,8 @@ export class WbsItem {
 
   @Column('int')
   duration: number;
+  @Column('int', { default: 0 })
+  seq: number;
 
   @OneToMany(() => Task, (task) => task.wbsItem)
   tasks: Task[];

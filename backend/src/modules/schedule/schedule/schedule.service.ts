@@ -33,8 +33,18 @@ export class ScheduleService {
   }
 
   async findRun(id: number): Promise<ScheduleRun> {
-    const entity = await this.runRepo.findOne({ where: { id }, relations: ['items'] });
+    const entity = await this.runRepo.findOne({ where: { id }, relations: ['items', 'items.task', 'project'] });
     if (!entity) throw new NotFoundException(`ScheduleRun #${id} not found`);
+    return entity;
+  }
+
+  async findLatestRunByProject(projectId: number): Promise<ScheduleRun> {
+    const entity = await this.runRepo.findOne({
+      where: { project: { id: projectId } as any },
+      order: { executedAt: 'DESC' as any },
+      relations: ['items', 'items.task', 'project'],
+    });
+    if (!entity) throw new NotFoundException(`ScheduleRun for Project #${projectId} not found`);
     return entity;
   }
 
@@ -86,7 +96,8 @@ export class ScheduleService {
     projTasks.forEach(t => { inDegree.set(t.id, t.predecessors.length); nextMap.set(t.id, []); });
     projTasks.forEach(t => {
       t.predecessors.forEach(dep => {
-        nextMap.get(dep.predecessor.id)!.push(t.id);
+        // 这里不要依赖 dep.predecessor（未必被 join），用 predecessorId 更稳
+        nextMap.get(dep.predecessorId)!.push(t.id);
       });
     });
     const es = new Map<number, Date>(); const ef = new Map<number, Date>();
@@ -134,6 +145,7 @@ export class ScheduleService {
         slack: Math.round((ls.get(t.id)!.getTime() - es.get(t.id)!.getTime()) / 86400000),
       } as any);
     }
-    return run;
+    // 返回带 items/task 的完整结果，便于前端直接使用
+    return this.findRun(run.id);
   }
 }

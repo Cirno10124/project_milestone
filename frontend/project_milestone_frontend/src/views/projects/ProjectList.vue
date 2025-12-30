@@ -2,6 +2,9 @@
   <div>
     <div class="user-info" style="float:right; margin-right: 20px;">
       当前用户：{{ authStore.user?.username || '未知' }}
+      <span style="margin-left: 10px;">
+        当前组织：{{ authStore.currentOrgName || `#${authStore.currentOrgId}` }}
+      </span>
     </div>
     <button @click="logout" style="float:right;">退出登录</button>
     <p v-if="error" class="error">{{ error }}</p>
@@ -30,8 +33,8 @@ const authStore = useAuthStore();
 
 onMounted(async () => {
   try {
-    const res = await getProjects();
-    projects.value = res.data;
+  const res = await getProjects();
+  projects.value = res.data;
   } catch (e) {
     console.error('获取项目列表失败', e);
     error.value = '加载项目失败，请稍后重试';

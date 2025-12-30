@@ -6,6 +6,9 @@ export class Project {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ name: 'org_id', type: 'bigint' })
+  orgId: number;
+
   @Column({ length: 255 })
   name: string;
 

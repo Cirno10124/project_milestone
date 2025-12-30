@@ -44,6 +44,10 @@ export function removeGroupMember(groupId: number, userId: number) {
   return http.delete(`/groups/${groupId}/members/${userId}`);
 }
 
+export function getGroupMembers(groupId: number) {
+  return http.get<Array<{ id: number; username: string; role: 'admin' | 'member' }>>(`/groups/${groupId}/members`);
+}
+
 export function changeMemberRole(dto: ChangeMemberRoleDto) {
   return http.patch(`/groups/${dto.groupId}/members/${dto.userId}/role`, {
     role: dto.role,

@@ -12,6 +12,8 @@ interface User {
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('token') || '');
   const user = ref<User | null>(null);
+  const currentOrgId = ref<number>(Number(localStorage.getItem('currentOrgId') || 0) || 0);
+  const currentOrgName = ref(localStorage.getItem('currentOrgName') || '');
 
   function setToken(t: string) {
     token.value = t;
@@ -21,13 +23,18 @@ export const useAuthStore = defineStore('auth', () => {
   function clearAuth() {
     token.value = '';
     user.value = null;
+    currentOrgId.value = 0;
+    currentOrgName.value = '';
     localStorage.removeItem('token');
+    localStorage.removeItem('currentOrgId');
+    localStorage.removeItem('currentOrgName');
   }
 
   async function login(credentials: { username: string; password: string }) {
     const res = await loginApi(credentials);
     setToken(res.data.token);
     await fetchUser();
+    await hydrateCurrentOrgName();
     router.push('/projects');
   }
 
@@ -42,15 +49,47 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = res.data;
   }
 
+  async function hydrateCurrentOrgName() {
+    // 兼容：老数据只有 orgId，没有 orgName（例如升级前已选过组织）
+    if (!token.value) return;
+    if (!currentOrgId.value) return;
+    if (currentOrgName.value) return;
+    try {
+      const { getCurrentOrg } = await import('../api/org');
+      const res = await getCurrentOrg();
+      const org = res.data;
+      if (org?.id && org?.name) {
+        setCurrentOrg(org.id, org.name);
+      }
+    } catch (e) {
+      // 静默失败：不影响页面，只是回显名可能缺失
+      console.warn('hydrateCurrentOrgName failed', e);
+    }
+  }
+
   function logout() {
     clearAuth();
     router.push('/auth/login');
   }
 
-  // 初始化时若有 token 则拉取用户信息
-  if (token.value) {
-    fetchUser().catch(() => clearAuth());
+  function setCurrentOrgId(orgId: number) {
+    currentOrgId.value = orgId;
+    localStorage.setItem('currentOrgId', String(orgId));
   }
 
-  return { token, user, login, register, fetchUser, logout };
+  function setCurrentOrg(orgId: number, orgName: string) {
+    currentOrgId.value = orgId;
+    currentOrgName.value = orgName || '';
+    localStorage.setItem('currentOrgId', String(orgId));
+    localStorage.setItem('currentOrgName', currentOrgName.value);
+  }
+
+  // 初始化时若有 token 则拉取用户信息
+  if (token.value) {
+    fetchUser()
+      .then(() => hydrateCurrentOrgName())
+      .catch(() => clearAuth());
+  }
+
+  return { token, user, currentOrgId, currentOrgName, setCurrentOrgId, setCurrentOrg, login, register, fetchUser, hydrateCurrentOrgName, logout };
 });

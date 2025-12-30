@@ -18,7 +18,8 @@ export class AuthService {
     const exists = await this.userRepo.findOne({ where: { username: dto.username } });
     if (exists) throw new ConflictException('用户名已存在');
     const hash = await bcrypt.hash(dto.password, 10);
-    const user = this.userRepo.create({ username: dto.username, passwordHash: hash });
+    const isSuper = process.env.SUPER_ADMIN_USERNAME && process.env.SUPER_ADMIN_USERNAME === dto.username;
+    const user = this.userRepo.create({ username: dto.username, passwordHash: hash, isSuperAdmin: !!isSuper });
     return this.userRepo.save(user);
   }
 
@@ -27,8 +28,12 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('用户名或密码错误');
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) throw new UnauthorizedException('用户名或密码错误');
-    const payload = { sub: user.id, username: user.username };
+    const payload = { sub: user.id, username: user.username, isSuperAdmin: !!user.isSuperAdmin };
     return { token: this.jwtService.sign(payload) };
+  }
+
+  verifyToken(token: string): { sub: number; username: string; isSuperAdmin?: boolean } {
+    return this.jwtService.verify(token) as { sub: number; username: string; isSuperAdmin?: boolean };
   }
 
   /**
@@ -36,10 +41,10 @@ export class AuthService {
    */
   async getProfile(token: string) {
     try {
-      const payload = this.jwtService.verify(token);
+      const payload = this.verifyToken(token);
       const user = await this.userRepo.findOne({ where: { id: payload.sub } });
       if (!user) throw new UnauthorizedException();
-      return { id: user.id, username: user.username };
+      return { id: user.id, username: user.username, isSuperAdmin: !!user.isSuperAdmin };
     } catch (e) {
       throw new UnauthorizedException();
     }

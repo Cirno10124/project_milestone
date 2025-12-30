@@ -29,6 +29,7 @@
     "@types/bcrypt": "^6.0.0",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
+    "exceljs": "^4.4.0",
     "fast-glob": "^3.3.3",
     "globby": "^15.0.0",
     "mermaid": "^11.12.1",

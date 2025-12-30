@@ -2,11 +2,16 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColum
 import { WbsItem } from '../../wbs-item/entities/wbs-item.entity';
 import { Dependency } from '../../dependency/dependency.entity';
 import { ScheduleItem } from '../../schedule/schedule-item.entity';
+import { TaskAssignee } from './task-assignee.entity';
 
 @Entity('task')
 export class Task {
   @PrimaryGeneratedColumn()
   id: number;
+
+  // 外键字段，用以持久化 wbsItemId
+  @Column({ name: 'wbs_item_id' })
+  wbsItemId: number;
 
   @ManyToOne(() => WbsItem, (item) => item.tasks)
   @JoinColumn({ name: 'wbs_item_id' })
@@ -38,4 +43,7 @@ export class Task {
 
   @OneToMany(() => ScheduleItem, (item) => item.task)
   scheduleItems: ScheduleItem[];
+
+  @OneToMany(() => TaskAssignee, (a) => a.task)
+  assignees: TaskAssignee[];
 }

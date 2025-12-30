@@ -13,14 +13,8 @@ export class WbsItemService {
   ) {}
 
   async create(createDto: CreateWbsItemDto): Promise<WbsItem> {
-    const entity = this.wbsRepo.create();
-    entity.name = createDto.name;
-    entity.description = createDto.description;
-    entity.duration = createDto.duration;
-    entity.projectId = createDto.projectId;
-    if (createDto.parentId !== undefined) {
-      entity.parentId = createDto.parentId;
-    }
+    // 直接使用 DTO 填充实体属性，包括 projectId 和 parentId
+    const entity: WbsItem = this.wbsRepo.create(createDto);
     return this.wbsRepo.save(entity);
   }
 
@@ -36,6 +30,12 @@ export class WbsItemService {
 
   async update(id: number, updateDto: UpdateWbsItemDto): Promise<WbsItem> {
     await this.wbsRepo.update(id, updateDto);
+    return this.findOne(id);
+  }
+
+  /** 更新 WBS 排序序号 */
+  async updateSeq(id: number, seq: number): Promise<WbsItem> {
+    await this.wbsRepo.update(id, { seq } as any);
     return this.findOne(id);
   }
 

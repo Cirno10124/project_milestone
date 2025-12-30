@@ -1,13 +1,30 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, Query } from '@nestjs/common';
 import { ScheduleService } from './schedule.service';
 import { CreateScheduleRunDto } from '../dto/create-schedule-run.dto';
 import { UpdateScheduleRunDto } from '../dto/update-schedule-run.dto';
 import { CreateScheduleItemDto } from '../dto/create-schedule-item.dto';
 import { UpdateScheduleItemDto } from '../dto/update-schedule-item.dto';
+import { ComputeScheduleDto } from '../dto/compute-schedule.dto';
 
 @Controller('schedule-runs')
 export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
+
+  /**
+   * 运行关键路径（CPM）计算，并返回包含 items/task 的结果
+   */
+  @Post('compute')
+  compute(@Body() dto: ComputeScheduleDto) {
+    return this.scheduleService.computeSchedule(dto.projectId, dto.runType ?? 'initial');
+  }
+
+  /**
+   * 获取某项目最近一次关键路径运行结果
+   */
+  @Get('latest')
+  latest(@Query('projectId') projectId?: string) {
+    return this.scheduleService.findLatestRunByProject(Number(projectId));
+  }
 
   @Post()
   createRun(@Body() dto: CreateScheduleRunDto) {

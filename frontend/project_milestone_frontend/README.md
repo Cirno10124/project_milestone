@@ -1,73 +1,49 @@
-# project_milestone_frontend
+# Project Milestone Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+项目前端（Vue 3 + Vite + Pinia + Vue Router）。本文档是**项目专属**的运行说明（替换框架模板 README）。
 
-## Recommended IDE Setup
+## 技术栈
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- **Vue**: Vue 3
+- **Build**: Vite
+- **State**: Pinia
+- **Router**: vue-router
+- **HTTP**: axios（见 `src/utils/http.ts`）
 
-## Recommended Browser Setup
+## 环境变量（`.env`）
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd) 
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+仓库根目录 `.gitignore` 会忽略任何目录下的 `.env`，所以你在仓库里看不到真实 `.env`，但本地功能正常。
 
-## Type Support for `.vue` Imports in TS
+- **获取方式**: 向项目维护者索取 `.env`，或复制 `frontend/project_milestone_frontend/env.example` 生成自己的 `frontend/project_milestone_frontend/.env`
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+关键变量：
 
-## Customize configuration
+- **VITE_API_URL**: 后端 API 基地址（默认 `http://localhost:3000`）
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+## 快速开始（Windows / PowerShell）
 
-## Project Setup
+在仓库根目录执行：
 
-```sh
+```powershell
+cd frontend\project_milestone_frontend
 npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
+Copy-Item env.example .env
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+默认开发地址：`http://localhost:5173`
+
+## 与后端的对接约定（高频）
+
+- **Authorization**: 前端会把 `localStorage.token` 作为 `Bearer <token>` 放到请求头（见 `src/utils/http.ts`）
+- **X-Org-Id**: 若已选择组织，前端会把 `currentOrgId` 放到请求头（见 `src/utils/http.ts`）
+- **后端跨域**: 后端默认只允许 `CORS_ORIGIN=http://localhost:5173`，若你改了前端端口/域名，需要同步改后端 `CORS_ORIGIN`
+
+## 常用脚本
 
 ```sh
+npm run dev
 npm run build
-```
-
-### Run Unit Tests with [Vitest](https://vitest.dev/)
-
-```sh
-npm run test:unit
-```
-
-### Run End-to-End Tests with [Playwright](https://playwright.dev)
-
-```sh
-# Install browsers for the first run
-npx playwright install
-
-# When testing on CI, must build the project first
-npm run build
-
-# Runs the end-to-end tests
-npm run test:e2e
-# Runs the tests only on Chromium
-npm run test:e2e -- --project=chromium
-# Runs the tests of a specific file
-npm run test:e2e -- tests/example.spec.ts
-# Runs the tests in debug mode
-npm run test:e2e -- --debug
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
+npm run preview
 npm run lint
 ```

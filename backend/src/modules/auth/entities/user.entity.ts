@@ -11,6 +11,10 @@ export class UserAccount {
   @Column({ name: 'password_hash', type: 'varchar', length: 255 })
   passwordHash: string;
 
+  // 超级管理员：可跨组织/跨项目执行所有操作（仅用于测试/运维）
+  @Column({ name: 'is_super_admin', type: 'tinyint', default: 0 })
+  isSuperAdmin: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
