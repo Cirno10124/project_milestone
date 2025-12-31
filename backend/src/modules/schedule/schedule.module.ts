@@ -6,9 +6,10 @@ import { ScheduleRun } from './schedule-run.entity';
 import { ScheduleItem } from './schedule-item.entity';
 import { Project } from '../project/entities/project.entity';
 import { Task } from '../task/entities/task.entity';
+import { ProjectMember } from '../project/entities/project-member.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ScheduleRun, ScheduleItem, Project, Task])],
+  imports: [TypeOrmModule.forFeature([ScheduleRun, ScheduleItem, Project, Task, ProjectMember])],
   providers: [ScheduleService],
   controllers: [ScheduleController]
 })

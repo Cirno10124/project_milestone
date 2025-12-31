@@ -46,6 +46,19 @@ export class TaskService {
   findAll(): Promise<Task[]> {
     return this.taskRepo.find({ relations: ['wbsItem'] });
   }
+
+  /**
+   * 超级管理员专用：按组织维度列出所有任务（仍受 X-Org-Id 限制）
+   */
+  async findAllForOrg(orgId: number): Promise<Task[]> {
+    return this.taskRepo
+      .createQueryBuilder('t')
+      .leftJoinAndSelect('t.wbsItem', 'w')
+      .leftJoin('w.project', 'p')
+      .where('p.org_id = :orgId', { orgId })
+      .orderBy('t.id', 'DESC')
+      .getMany();
+  }
   /** 根据项目ID获取任务 */
   async findByProject(projectId: number, userId: number, orgId: number, isSuperAdmin = false): Promise<Task[]> {
     await this.assertProjectMember(projectId, userId, orgId, isSuperAdmin);
@@ -69,14 +82,33 @@ export class TaskService {
     return task;
   }
 
+  async findOneWithAuth(id: number, userId: number, orgId: number, isSuperAdmin = false): Promise<Task> {
+    const projectId = await this.getProjectIdByTask(id);
+    await this.assertProjectMember(projectId, userId, orgId, isSuperAdmin);
+    return this.findOne(id);
+  }
+
   async update(id: number, updateDto: UpdateTaskDto): Promise<Task> {
     await this.taskRepo.update(id, updateDto);
     return this.findOne(id);
   }
 
+  async updateWithAuth(id: number, updateDto: UpdateTaskDto, userId: number, orgId: number, isSuperAdmin = false): Promise<Task> {
+    const projectId = await this.getProjectIdByTask(id);
+    await this.assertProjectAdmin(projectId, userId, orgId, isSuperAdmin);
+    return this.update(id, updateDto);
+  }
+
   async remove(id: number): Promise<void> {
     const res = await this.taskRepo.delete(id);
     if (res.affected === 0) throw new NotFoundException(`Task #${id} not found`);
+  }
+
+  async removeWithAuth(id: number, userId: number, orgId: number, isSuperAdmin = false): Promise<{ ok: true }> {
+    const projectId = await this.getProjectIdByTask(id);
+    await this.assertProjectAdmin(projectId, userId, orgId, isSuperAdmin);
+    await this.remove(id);
+    return { ok: true };
   }
 
   private async getProjectIdByTask(taskId: number): Promise<number> {
@@ -92,25 +124,20 @@ export class TaskService {
   }
 
   async assertProjectMember(projectId: number, userId: number, orgId: number, isSuperAdmin = false) {
-    // 超级管理员：只需确保项目存在且属于 org
-    //（orgId 已由 OrgGuard 设置；super admin 可不加入 org/project）
-    if (isSuperAdmin) {
-      const p = await this.projectRepo.findOne({ where: { id: projectId, orgId } as any });
-      if (!p) throw new ForbiddenException('无项目权限');
-      return;
-    }
-    const pm = await this.projectMemberRepo.findOne({ where: { projectId, userId }, relations: ['project'] });
-    if (!pm || pm.project?.orgId !== orgId) throw new ForbiddenException('无项目权限');
+    // 统一：先确认项目属于 org，再按需校验成员/角色
+    const p = await this.projectRepo.findOne({ where: { id: projectId, orgId } as any });
+    if (!p) throw new ForbiddenException('无项目权限');
+    if (isSuperAdmin) return;
+    const pm = await this.projectMemberRepo.findOne({ where: { projectId, userId } });
+    if (!pm) throw new ForbiddenException('无项目权限');
   }
 
   async assertProjectAdmin(projectId: number, userId: number, orgId: number, isSuperAdmin = false) {
-    if (isSuperAdmin) {
-      const p = await this.projectRepo.findOne({ where: { id: projectId, orgId } as any });
-      if (!p) throw new ForbiddenException('无项目权限');
-      return;
-    }
-    const pm = await this.projectMemberRepo.findOne({ where: { projectId, userId }, relations: ['project'] });
-    if (!pm || pm.project?.orgId !== orgId) throw new ForbiddenException('无项目权限');
+    const p = await this.projectRepo.findOne({ where: { id: projectId, orgId } as any });
+    if (!p) throw new ForbiddenException('无项目权限');
+    if (isSuperAdmin) return;
+    const pm = await this.projectMemberRepo.findOne({ where: { projectId, userId } });
+    if (!pm) throw new ForbiddenException('无项目权限');
     if (pm.role !== 'admin') throw new ForbiddenException('需要项目管理员权限');
   }
 

@@ -59,12 +59,10 @@ export class ProjectService {
       if (!proj) throw new NotFoundException(`Project #${id} not found`);
       return Object.assign(proj, { role: 'admin' as const });
     }
-    const pm = await this.projectMemberRepo.findOne({ where: { projectId: id, userId }, relations: ['project'] });
-    if (!pm || pm.project?.orgId !== orgId) throw new ForbiddenException('无项目权限');
-
+    const role = await this.getMyProjectRole(id, userId, orgId, isSuperAdmin);
     const proj = await this.projectRepo.findOne({ where: { id, orgId }, relations: ['wbsItems'] });
     if (!proj) throw new NotFoundException(`Project #${id} not found`);
-    return Object.assign(proj, { role: pm.role });
+    return Object.assign(proj, { role });
   }
 
   async update(id: number, updateDto: UpdateProjectDto, userId: number, orgId: number, isSuperAdmin = false): Promise<Project & { role: 'admin' | 'member' }> {
@@ -87,8 +85,10 @@ export class ProjectService {
       if (!p) throw new ForbiddenException('无项目权限');
       return 'admin' as const;
     }
-    const pm = await this.projectMemberRepo.findOne({ where: { projectId, userId }, relations: ['project'] });
-    if (!pm || pm.project?.orgId !== orgId) throw new ForbiddenException('无项目权限');
+    const p = await this.projectRepo.findOne({ where: { id: projectId, orgId } });
+    if (!p) throw new ForbiddenException('无项目权限');
+    const pm = await this.projectMemberRepo.findOne({ where: { projectId, userId } });
+    if (!pm) throw new ForbiddenException('无项目权限');
     return pm.role;
   }
 

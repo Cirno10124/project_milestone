@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Post, Body, Param, Patch, Delete, Query, UseGuards } from '@nestjs/common';
 import { TaskService } from './task.service';
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { UpdateTaskDto } from '../dto/update-task.dto';
@@ -22,28 +22,29 @@ export class TaskController {
   @UseGuards(JwtAuthGuard, OrgGuard)
   @Get()
   findAll(@Query('projectId') projectId: string | undefined, @CurrentUser() user: RequestUser, @OrgDecorator() org: OrgContext) {
-    if (projectId) {
-      return this.taskService.findByProject(+projectId, user.id, org.orgId, user.isSuperAdmin);
+    if (!projectId) {
+      if (!user.isSuperAdmin) throw new BadRequestException('缺少 projectId');
+      return this.taskService.findAllForOrg(org.orgId);
     }
-    return this.taskService.findAll();
+    return this.taskService.findByProject(+projectId, user.id, org.orgId, user.isSuperAdmin);
   }
 
   @UseGuards(JwtAuthGuard, OrgGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.taskService.findOne(+id);
+  findOne(@Param('id') id: string, @CurrentUser() user: RequestUser, @OrgDecorator() org: OrgContext) {
+    return this.taskService.findOneWithAuth(+id, user.id, org.orgId, user.isSuperAdmin);
   }
 
   @UseGuards(JwtAuthGuard, OrgGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateTaskDto) {
-    return this.taskService.update(+id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateTaskDto, @CurrentUser() user: RequestUser, @OrgDecorator() org: OrgContext) {
+    return this.taskService.updateWithAuth(+id, dto, user.id, org.orgId, user.isSuperAdmin);
   }
 
   @UseGuards(JwtAuthGuard, OrgGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.taskService.remove(+id);
+  remove(@Param('id') id: string, @CurrentUser() user: RequestUser, @OrgDecorator() org: OrgContext) {
+    return this.taskService.removeWithAuth(+id, user.id, org.orgId, user.isSuperAdmin);
   }
 
   // 任务转派：仅项目管理员

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ScheduleRun } from '../schedule-run.entity';
@@ -9,6 +9,7 @@ import { CreateScheduleItemDto } from '../dto/create-schedule-item.dto';
 import { UpdateScheduleItemDto } from '../dto/update-schedule-item.dto';
 import { Project } from '../../project/entities/project.entity';
 import { Task } from '../../task/entities/task.entity';
+import { ProjectMember } from '../../project/entities/project-member.entity';
 
 @Injectable()
 export class ScheduleService {
@@ -21,6 +22,8 @@ export class ScheduleService {
     private readonly projectRepo: Repository<Project>,
     @InjectRepository(Task)
     private readonly taskRepo: Repository<Task>,
+    @InjectRepository(ProjectMember)
+    private readonly projectMemberRepo: Repository<ProjectMember>,
   ) {}
 
   async createRun(dto: CreateScheduleRunDto): Promise<ScheduleRun> {
@@ -32,10 +35,27 @@ export class ScheduleService {
     return this.runRepo.find({ relations: ['items'] });
   }
 
+  findAllRunsForOrg(orgId: number): Promise<ScheduleRun[]> {
+    return this.runRepo
+      .createQueryBuilder('r')
+      .leftJoinAndSelect('r.items', 'i')
+      .leftJoinAndSelect('r.project', 'p')
+      .where('p.org_id = :orgId', { orgId })
+      .orderBy('r.executed_at', 'DESC')
+      .getMany();
+  }
+
   async findRun(id: number): Promise<ScheduleRun> {
     const entity = await this.runRepo.findOne({ where: { id }, relations: ['items', 'items.task', 'project'] });
     if (!entity) throw new NotFoundException(`ScheduleRun #${id} not found`);
     return entity;
+  }
+
+  async findRunWithAuth(id: number, userId: number, orgId: number, isSuperAdmin = false): Promise<ScheduleRun> {
+    const run = await this.runRepo.findOne({ where: { id }, relations: ['items', 'items.task', 'project'] });
+    if (!run) throw new NotFoundException(`ScheduleRun #${id} not found`);
+    await this.assertProjectMember(run.project?.id, userId, orgId, isSuperAdmin);
+    return run;
   }
 
   async findLatestRunByProject(projectId: number): Promise<ScheduleRun> {
@@ -48,14 +68,34 @@ export class ScheduleService {
     return entity;
   }
 
+  async findLatestRunByProjectWithAuth(projectId: number, userId: number, orgId: number, isSuperAdmin = false): Promise<ScheduleRun> {
+    await this.assertProjectMember(projectId, userId, orgId, isSuperAdmin);
+    return this.findLatestRunByProject(projectId);
+  }
+
   async updateRun(id: number, dto: UpdateScheduleRunDto): Promise<ScheduleRun> {
     await this.runRepo.update(id, dto);
     return this.findRun(id);
   }
 
+  async updateRunWithAuth(id: number, dto: UpdateScheduleRunDto, userId: number, orgId: number, isSuperAdmin = false): Promise<ScheduleRun> {
+    const run = await this.runRepo.findOne({ where: { id }, relations: ['project'] });
+    if (!run) throw new NotFoundException(`ScheduleRun #${id} not found`);
+    await this.assertProjectAdmin(run.project?.id, userId, orgId, isSuperAdmin);
+    return this.updateRun(id, dto);
+  }
+
   async removeRun(id: number): Promise<void> {
     const res = await this.runRepo.delete(id);
     if (res.affected === 0) throw new NotFoundException(`ScheduleRun #${id} not found`);
+  }
+
+  async removeRunWithAuth(id: number, userId: number, orgId: number, isSuperAdmin = false): Promise<{ ok: true }> {
+    const run = await this.runRepo.findOne({ where: { id }, relations: ['project'] });
+    if (!run) throw new NotFoundException(`ScheduleRun #${id} not found`);
+    await this.assertProjectAdmin(run.project?.id, userId, orgId, isSuperAdmin);
+    await this.removeRun(id);
+    return { ok: true };
   }
 
   async createItem(dto: CreateScheduleItemDto): Promise<ScheduleItem> {
@@ -67,10 +107,28 @@ export class ScheduleService {
     return this.itemRepo.find({ relations: ['scheduleRun', 'task'] });
   }
 
+  findAllItemsForOrg(orgId: number): Promise<ScheduleItem[]> {
+    return this.itemRepo
+      .createQueryBuilder('i')
+      .leftJoinAndSelect('i.scheduleRun', 'r')
+      .leftJoinAndSelect('i.task', 't')
+      .leftJoin('r.project', 'p')
+      .where('p.org_id = :orgId', { orgId })
+      .orderBy('i.id', 'DESC')
+      .getMany();
+  }
+
   async findItem(id: number): Promise<ScheduleItem> {
     const entity = await this.itemRepo.findOne({ where: { id }, relations: ['scheduleRun', 'task'] });
     if (!entity) throw new NotFoundException(`ScheduleItem #${id} not found`);
     return entity;
+  }
+
+  async findItemWithAuth(id: number, userId: number, orgId: number, isSuperAdmin = false): Promise<ScheduleItem> {
+    const item = await this.itemRepo.findOne({ where: { id }, relations: ['scheduleRun', 'scheduleRun.project', 'task'] });
+    if (!item) throw new NotFoundException(`ScheduleItem #${id} not found`);
+    await this.assertProjectMember(item.scheduleRun?.project?.id, userId, orgId, isSuperAdmin);
+    return item;
   }
 
   async updateItem(id: number, dto: UpdateScheduleItemDto): Promise<ScheduleItem> {
@@ -78,16 +136,36 @@ export class ScheduleService {
     return this.findItem(id);
   }
 
+  async updateItemWithAuth(id: number, dto: UpdateScheduleItemDto, userId: number, orgId: number, isSuperAdmin = false): Promise<ScheduleItem> {
+    const item = await this.itemRepo.findOne({ where: { id }, relations: ['scheduleRun', 'scheduleRun.project'] });
+    if (!item) throw new NotFoundException(`ScheduleItem #${id} not found`);
+    await this.assertProjectAdmin(item.scheduleRun?.project?.id, userId, orgId, isSuperAdmin);
+    return this.updateItem(id, dto);
+  }
+
   async removeItem(id: number): Promise<void> {
     const res = await this.itemRepo.delete(id);
     if (res.affected === 0) throw new NotFoundException(`ScheduleItem #${id} not found`);
   }
 
+  async removeItemWithAuth(id: number, userId: number, orgId: number, isSuperAdmin = false): Promise<{ ok: true }> {
+    const item = await this.itemRepo.findOne({ where: { id }, relations: ['scheduleRun', 'scheduleRun.project'] });
+    if (!item) throw new NotFoundException(`ScheduleItem #${id} not found`);
+    await this.assertProjectAdmin(item.scheduleRun?.project?.id, userId, orgId, isSuperAdmin);
+    await this.removeItem(id);
+    return { ok: true };
+  }
+
   /**
    * 运行关键路径算法并保存结果
    */
-  async computeSchedule(projectId: number, runType: 'initial' | 'rolling'): Promise<ScheduleRun> {
-    const project = await this.projectRepo.findOne({ where: { id: projectId } });
+  async computeScheduleWithAuth(projectId: number, runType: 'initial' | 'rolling', userId: number, orgId: number, isSuperAdmin = false): Promise<ScheduleRun> {
+    await this.assertProjectAdmin(projectId, userId, orgId, isSuperAdmin);
+    return this.computeSchedule(projectId, runType, orgId);
+  }
+
+  async computeSchedule(projectId: number, runType: 'initial' | 'rolling', orgId?: number): Promise<ScheduleRun> {
+    const project = orgId ? await this.getProjectEnsuringOrg(projectId, orgId) : await this.projectRepo.findOne({ where: { id: projectId } });
     if (!project) throw new NotFoundException(`Project #${projectId} not found`);
     const tasks = await this.taskRepo.find({ relations: ['predecessors', 'wbsItem', 'wbsItem.project'] });
     const projTasks = tasks.filter(t => t.wbsItem.project.id === projectId);
@@ -147,5 +225,30 @@ export class ScheduleService {
     }
     // 返回带 items/task 的完整结果，便于前端直接使用
     return this.findRun(run.id);
+  }
+
+  private async assertProjectMember(projectId: number | undefined, userId: number, orgId: number, isSuperAdmin = false) {
+    if (!projectId) throw new ForbiddenException('无项目权限');
+    await this.getProjectEnsuringOrg(projectId, orgId);
+    if (isSuperAdmin) return;
+    const pm = await this.projectMemberRepo.findOne({ where: { projectId, userId } });
+    if (!pm) throw new ForbiddenException('无项目权限');
+  }
+
+  private async assertProjectAdmin(projectId: number | undefined, userId: number, orgId: number, isSuperAdmin = false) {
+    if (!projectId) throw new ForbiddenException('无项目权限');
+    await this.getProjectEnsuringOrg(projectId, orgId);
+    if (isSuperAdmin) return;
+    const pm = await this.projectMemberRepo.findOne({ where: { projectId, userId } });
+    if (!pm) throw new ForbiddenException('无项目权限');
+    if (pm.role !== 'admin') throw new ForbiddenException('需要项目管理员权限');
+  }
+
+  private async getProjectEnsuringOrg(projectId: number, orgId: number): Promise<Project> {
+    const p = await this.projectRepo.findOne({ where: { id: projectId } });
+    if (!p) throw new NotFoundException(`Project #${projectId} not found`);
+    // MySQL BIGINT 可能在运行时表现为 string；统一做数值化比较避免误判
+    if (Number((p as any).orgId) !== Number(orgId)) throw new ForbiddenException('无项目权限');
+    return p;
   }
 }
