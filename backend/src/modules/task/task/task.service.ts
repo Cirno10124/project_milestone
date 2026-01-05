@@ -99,6 +99,15 @@ export class TaskService {
     return this.update(id, updateDto);
   }
 
+  /**
+   * Webhook 专用：仅允许更新属于指定项目的任务（不依赖用户身份）
+   */
+  async updateFromWebhook(projectId: number, taskId: number, updateDto: UpdateTaskDto): Promise<Task> {
+    const realProjectId = await this.getProjectIdByTask(taskId);
+    if (realProjectId !== projectId) throw new ForbiddenException('任务不属于该项目');
+    return this.update(taskId, updateDto);
+  }
+
   async remove(id: number): Promise<void> {
     const res = await this.taskRepo.delete(id);
     if (res.affected === 0) throw new NotFoundException(`Task #${id} not found`);

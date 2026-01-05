@@ -5,6 +5,57 @@
       <router-link :to="`/projects/${projectId}/members`">项目成员管理</router-link>
     </div>
     <p>{{ project.description }}</p>
+
+    <!-- Git 联动配置（仅管理员可见） -->
+    <div v-if="isAdmin" class="git-integration">
+      <h3>Git 联动</h3>
+      <p class="hint">将项目绑定到内网 Git 仓库，并在 push 时根据 commit message 自动更新任务进度。</p>
+
+      <div class="git-form">
+        <div>
+          <label>仓库地址（URL）</label>
+          <input v-model="repoForm.repoUrl" placeholder="例如：http://git.xxx.local/group/repo.git" />
+        </div>
+        <div>
+          <label>Git 服务</label>
+          <select v-model="repoForm.repoProvider">
+            <option value="gitlab">GitLab</option>
+            <option value="gitea">Gitea</option>
+            <option value="generic">Generic</option>
+          </select>
+        </div>
+        <div>
+          <label>默认分支</label>
+          <input v-model="repoForm.repoDefaultBranch" placeholder="main / master" />
+        </div>
+        <div style="margin-top: 6px;">
+          <label style="display:flex; align-items:center; gap: 8px;">
+            <input type="checkbox" v-model="repoForm.gitSyncEnabled" />
+            启用“commit 自动更新任务进度”
+          </label>
+        </div>
+
+        <div style="display:flex; gap: 8px; margin-top: 8px;">
+          <button @click="saveRepo" :disabled="repoSaving">{{ repoSaving ? '保存中...' : '保存配置' }}</button>
+          <button @click="rotateRepoToken" :disabled="repoSaving">轮换 Token</button>
+          <button @click="reloadRepo" :disabled="repoSaving">刷新</button>
+        </div>
+
+        <p v-if="repoError" class="error">{{ repoError }}</p>
+      </div>
+
+      <div v-if="repoInfo.webhookPath" class="git-webhook">
+        <h4>Webhook 配置</h4>
+        <div class="mono">Webhook URL：{{ apiBaseUrl }}{{ repoInfo.webhookPath }}</div>
+        <div class="mono">Header：X-Project-Webhook-Token: {{ repoInfo.webhookToken }}</div>
+        <div v-if="repoInfo.lastGitEventAt" class="hint">最后一次收到 Git 事件：{{ repoInfo.lastGitEventAt }}</div>
+
+        <h4 style="margin-top: 10px;">Commit message 规则（示例）</h4>
+        <div class="mono">#task:12 progress:30%</div>
+        <div class="mono">task#12 进度:80%</div>
+        <div class="mono">#task:12 done</div>
+      </div>
+    </div>
     
     <!-- 项目开始日期设置 -->
     <div v-if="isAdmin" class="project-date-form">
@@ -241,7 +292,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { getProject, updateProjectStartDate, exportGantt, getGanttData } from '@/api/project';
+import { getProject, updateProjectStartDate, exportGantt, getGanttData, getProjectRepo, updateProjectRepo } from '@/api/project';
 import { getWbsItems, createWbsItem, updateWbsItem } from '@/api/wbs-item';
 import type { WbsItemDto } from '@/api/wbs-item';
 import { getTasksByProject, createTask, updateTask } from '@/api/task';
@@ -268,6 +319,65 @@ const project = ref<ProjectDetail>({ id: 0, name: '', description: '' });
 const error = ref<string>('');
 
 const isAdmin = computed(() => project.value.role === 'admin');
+
+// Git repo binding
+const apiBaseUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
+const repoSaving = ref(false);
+const repoError = ref('');
+const repoForm = ref({ repoUrl: '', repoProvider: 'gitlab', repoDefaultBranch: '', gitSyncEnabled: false });
+const repoInfo = ref<{ webhookPath: string; webhookToken: string; lastGitEventAt: string | null }>({ webhookPath: '', webhookToken: '', lastGitEventAt: null });
+
+async function reloadRepo() {
+  repoError.value = '';
+  try {
+    const res = await getProjectRepo(projectId.value);
+    const data = res.data;
+    repoForm.value = {
+      repoUrl: data.repoUrl ?? '',
+      repoProvider: data.repoProvider ?? 'generic',
+      repoDefaultBranch: data.repoDefaultBranch ?? '',
+      gitSyncEnabled: !!data.gitSyncEnabled,
+    };
+    repoInfo.value = { webhookPath: data.webhookPath, webhookToken: data.webhookToken, lastGitEventAt: data.lastGitEventAt ?? null };
+  } catch (e: any) {
+    console.error('加载 Git 联动配置失败', e);
+    repoError.value = e?.response?.data?.message || '加载 Git 联动配置失败';
+  }
+}
+
+async function saveRepo() {
+  repoError.value = '';
+  repoSaving.value = true;
+  try {
+    const res = await updateProjectRepo(projectId.value, {
+      repoUrl: repoForm.value.repoUrl,
+      repoProvider: repoForm.value.repoProvider,
+      repoDefaultBranch: repoForm.value.repoDefaultBranch,
+      gitSyncEnabled: repoForm.value.gitSyncEnabled,
+    });
+    const data = res.data;
+    repoInfo.value = { webhookPath: data.webhookPath, webhookToken: data.webhookToken, lastGitEventAt: data.lastGitEventAt ?? null };
+  } catch (e: any) {
+    console.error('保存 Git 联动配置失败', e);
+    repoError.value = e?.response?.data?.message || '保存 Git 联动配置失败';
+  } finally {
+    repoSaving.value = false;
+  }
+}
+
+async function rotateRepoToken() {
+  repoError.value = '';
+  repoSaving.value = true;
+  try {
+    const res = await updateProjectRepo(projectId.value, { rotateWebhookSecret: true });
+    repoInfo.value = { webhookPath: res.data.webhookPath, webhookToken: res.data.webhookToken, lastGitEventAt: res.data.lastGitEventAt ?? null };
+  } catch (e: any) {
+    console.error('轮换 Token 失败', e);
+    repoError.value = e?.response?.data?.message || '轮换 Token 失败';
+  } finally {
+    repoSaving.value = false;
+  }
+}
 
 // WBS
 const wbsItems = ref<WbsItemDto[]>([]);
@@ -1021,6 +1131,9 @@ onMounted(async () => {
     await loadWbs();
     await loadTasks();
     await loadProjectMembers();
+    if (isAdmin.value) {
+      await reloadRepo();
+    }
     mermaid.initialize({ startOnLoad: false });
     // 有任务时，自动跑一次关键路径分析以填充任务列表列（不阻断页面）
     if (tasks.value.length > 0) {
@@ -1180,6 +1293,7 @@ watch([wbsItems, tasks, scheduleByTaskId, criticalTaskIds, showFlowchart], async
     for (let i = 0; i < sortedWbs.length; i++) {
       const cur = sortedWbs[i];
       const nxt = sortedWbs[i + 1];
+      if (!cur) continue;
       const curId = toLinkableId(cur.id);
       if (nxt) {
         addLink(`G${curId}`, `M${toLinkableId(nxt.id)}`);
@@ -1372,6 +1486,34 @@ watch([wbsItems, tasks, scheduleByTaskId, criticalTaskIds, showFlowchart], async
   text-align: center;
   padding: 40px;
   color: #666;
+}
+
+.git-integration {
+  margin-top: 16px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  margin-bottom: 16px;
+}
+.git-form > div {
+  margin-bottom: 8px;
+}
+.git-form label {
+  display: inline-block;
+  margin-right: 10px;
+  min-width: 120px;
+}
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  background: #fafafa;
+  border: 1px solid #eee;
+  padding: 6px 8px;
+  border-radius: 6px;
+  margin-top: 6px;
+  word-break: break-all;
+}
+.hint {
+  color: #666;
+  font-size: 0.9em;
 }
 </style>
 

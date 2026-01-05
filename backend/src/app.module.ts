@@ -13,6 +13,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { OrgModule } from './modules/org/org.module';
 import { GroupModule } from './modules/group/group.module';
 import { DevModule } from './modules/dev/dev.module';
+import { GitModule } from './modules/git/git.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { DevModule } from './modules/dev/dev.module';
     GroupModule,
     ...(process.env.NODE_ENV === 'production' ? [] : [DevModule]),
     ProjectModule,
+    GitModule,
     WbsItemModule,
     TaskModule,
     DependencyModule,

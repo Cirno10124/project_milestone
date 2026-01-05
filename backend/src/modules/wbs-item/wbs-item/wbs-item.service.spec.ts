@@ -5,6 +5,8 @@ import { WbsItemService } from './wbs-item.service';
 import { WbsItem } from '../entities/wbs-item.entity';
 import { CreateWbsItemDto } from '../dto/create-wbs-item.dto';
 import { UpdateWbsItemDto } from '../dto/update-wbs-item.dto';
+import { Project } from '../../project/entities/project.entity';
+import { ProjectMember } from '../../project/entities/project-member.entity';
 
 describe('WbsItemService', () => {
   let service: WbsItemService;
@@ -19,10 +21,13 @@ describe('WbsItemService', () => {
       update: jest.fn().mockResolvedValue({}),
       delete: jest.fn().mockResolvedValue({ affected: 1 }),
     };
+    const noopRepo = {};
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WbsItemService,
         { provide: getRepositoryToken(WbsItem), useValue: repo },
+        { provide: getRepositoryToken(Project), useValue: noopRepo },
+        { provide: getRepositoryToken(ProjectMember), useValue: noopRepo },
       ],
     }).compile();
     service = module.get<WbsItemService>(WbsItemService);

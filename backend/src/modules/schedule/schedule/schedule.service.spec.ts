@@ -10,6 +10,7 @@ import { CreateScheduleRunDto } from '../dto/create-schedule-run.dto';
 import { UpdateScheduleRunDto } from '../dto/update-schedule-run.dto';
 import { CreateScheduleItemDto } from '../dto/create-schedule-item.dto';
 import { UpdateScheduleItemDto } from '../dto/update-schedule-item.dto';
+import { ProjectMember } from '../../project/entities/project-member.entity';
 
 describe('ScheduleService', () => {
   let service: ScheduleService;
@@ -22,10 +23,15 @@ describe('ScheduleService', () => {
     mockProjectRepo = { findOne: jest.fn().mockResolvedValue({ id: 1, startDate: '2025-10-01' }) };
     mockTaskRepo = { find: jest.fn().mockResolvedValue([
       { id: 1, duration: 3, predecessors: [], wbsItem: { project: { id: 1 } } },
-      { id: 2, duration: 2, predecessors: [{ predecessor: { id: 1 } }], wbsItem: { project: { id: 1 } } }
+      { id: 2, duration: 2, predecessors: [{ predecessorId: 1 }], wbsItem: { project: { id: 1 } } }
     ]) };
-    mockRunRepo = { create: jest.fn().mockImplementation(dto => dto), save: jest.fn().mockResolvedValue({ id: 100 }) };
+    mockRunRepo = {
+      create: jest.fn().mockImplementation(dto => dto),
+      save: jest.fn().mockResolvedValue({ id: 100 }),
+      findOne: jest.fn().mockResolvedValue({ id: 100 }),
+    };
     mockItemRepo = { save: jest.fn().mockResolvedValue(null) };
+    const mockProjectMemberRepo = {};
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ScheduleService,
@@ -33,6 +39,7 @@ describe('ScheduleService', () => {
         { provide: getRepositoryToken(Task), useValue: mockTaskRepo },
         { provide: getRepositoryToken(ScheduleRun), useValue: mockRunRepo },
         { provide: getRepositoryToken(ScheduleItem), useValue: mockItemRepo },
+        { provide: getRepositoryToken(ProjectMember), useValue: mockProjectMemberRepo },
       ],
     }).compile();
     service = module.get<ScheduleService>(ScheduleService);

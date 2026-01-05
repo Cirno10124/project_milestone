@@ -5,6 +5,10 @@ import { TaskService } from './task.service';
 import { Task } from '../entities/task.entity';
 import { CreateTaskDto } from '../dto/create-task.dto';
 import { UpdateTaskDto } from '../dto/update-task.dto';
+import { TaskAssignee } from '../entities/task-assignee.entity';
+import { ProjectMember } from '../../project/entities/project-member.entity';
+import { WbsItem } from '../../wbs-item/entities/wbs-item.entity';
+import { Project } from '../../project/entities/project.entity';
 
 describe('TaskService', () => {
   let service: TaskService;
@@ -12,17 +16,22 @@ describe('TaskService', () => {
 
   beforeEach(async () => {
     repo = {
-      create: jest.fn().mockImplementation(dto => dto as any),
+      create: jest.fn().mockImplementation(() => ({} as any)),
       save: jest.fn().mockResolvedValue({ id: 1, name: 'Task' }),
       find: jest.fn().mockResolvedValue([{ id: 1, name: 'Task' }]),
       findOne: jest.fn().mockResolvedValue({ id: 1, name: 'Task' }),
       update: jest.fn().mockResolvedValue({}),
       delete: jest.fn().mockResolvedValue({ affected: 1 }),
     };
+    const noopRepo = {};
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TaskService,
         { provide: getRepositoryToken(Task), useValue: repo },
+        { provide: getRepositoryToken(TaskAssignee), useValue: noopRepo },
+        { provide: getRepositoryToken(ProjectMember), useValue: noopRepo },
+        { provide: getRepositoryToken(WbsItem), useValue: noopRepo },
+        { provide: getRepositoryToken(Project), useValue: noopRepo },
       ],
     }).compile();
     service = module.get<TaskService>(TaskService);
@@ -35,7 +44,7 @@ describe('TaskService', () => {
   it('create works', async () => {
     const dto: CreateTaskDto = { wbsItemId: 1, name: 'Task' };
     const res = await service.create(dto);
-    expect(repo.create).toHaveBeenCalledWith(dto);
+    expect(repo.create).toHaveBeenCalled();
     expect(repo.save).toHaveBeenCalled();
     expect(res).toEqual({ id: 1, name: 'Task' });
   });

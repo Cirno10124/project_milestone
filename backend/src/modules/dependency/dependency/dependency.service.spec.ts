@@ -5,6 +5,9 @@ import { DependencyService } from './dependency.service';
 import { Dependency } from '../dependency.entity';
 import { CreateDependencyDto } from '../dto/create-dependency.dto';
 import { UpdateDependencyDto } from '../dto/update-dependency.dto';
+import { Task } from '../../task/entities/task.entity';
+import { Project } from '../../project/entities/project.entity';
+import { ProjectMember } from '../../project/entities/project-member.entity';
 
 describe('DependencyService', () => {
   let service: DependencyService;
@@ -19,10 +22,14 @@ describe('DependencyService', () => {
       update: jest.fn().mockResolvedValue({}),
       delete: jest.fn().mockResolvedValue({ affected: 1 }),
     };
+    const noopRepo = {};
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DependencyService,
         { provide: getRepositoryToken(Dependency), useValue: repo },
+        { provide: getRepositoryToken(Task), useValue: noopRepo },
+        { provide: getRepositoryToken(Project), useValue: noopRepo },
+        { provide: getRepositoryToken(ProjectMember), useValue: noopRepo },
       ],
     }).compile();
     service = module.get<DependencyService>(DependencyService);

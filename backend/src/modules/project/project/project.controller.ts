@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, Patch, Delete, Res, UseGuards } fro
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { UpdateProjectDto } from '../dto/update-project.dto';
+import { UpdateProjectRepoDto } from '../dto/update-project-repo.dto';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { OrgGuard } from '../../../common/guards/org.guard';
@@ -36,6 +37,21 @@ export class ProjectController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateDto: UpdateProjectDto, @CurrentUser() user: RequestUser, @OrgDecorator() org: OrgContext) {
     return this.projectService.update(+id, updateDto, user.id, org.orgId, user.isSuperAdmin);
+  }
+
+  /**
+   * Git 仓库绑定（仅项目管理员）
+   */
+  @UseGuards(JwtAuthGuard, OrgGuard)
+  @Get(':id/repo')
+  getRepo(@Param('id') id: string, @CurrentUser() user: RequestUser, @OrgDecorator() org: OrgContext) {
+    return this.projectService.getRepoSettingsWithAuth(+id, user.id, org.orgId, user.isSuperAdmin);
+  }
+
+  @UseGuards(JwtAuthGuard, OrgGuard)
+  @Patch(':id/repo')
+  updateRepo(@Param('id') id: string, @Body() dto: UpdateProjectRepoDto, @CurrentUser() user: RequestUser, @OrgDecorator() org: OrgContext) {
+    return this.projectService.updateRepoSettingsWithAuth(+id, dto, user.id, org.orgId, user.isSuperAdmin);
   }
 
   @UseGuards(JwtAuthGuard, OrgGuard)

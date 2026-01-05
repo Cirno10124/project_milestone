@@ -38,7 +38,7 @@ export const useGroupStore = defineStore('group', () => {
     members.value = group?.members || [];
   }
 
-  async function addMember(groupId: number, userId: number, role: string) {
+  async function addMember(groupId: number, userId: number, role: 'admin' | 'member') {
     const res = await groupApi.addGroupMember({ groupId, userId, role });
     members.value.push(res.data);
     return res.data;
@@ -49,7 +49,7 @@ export const useGroupStore = defineStore('group', () => {
     members.value = members.value.filter(m => m.userId !== userId);
   }
 
-  async function changeRole(groupId: number, userId: number, role: string) {
+  async function changeRole(groupId: number, userId: number, role: 'admin' | 'member') {
     const res = await groupApi.changeMemberRole({ groupId, userId, role });
     const idx = members.value.findIndex(m => m.userId === userId);
     if (idx !== -1) members.value[idx].role = role;

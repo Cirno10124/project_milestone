@@ -9,6 +9,16 @@ export interface ProjectDto {
   role?: 'admin' | 'member';
 }
 
+export interface ProjectRepoDto {
+  repoUrl: string;
+  repoProvider: string;
+  repoDefaultBranch: string;
+  gitSyncEnabled: boolean;
+  webhookPath: string;
+  webhookToken: string;
+  lastGitEventAt: string | null;
+}
+
 export interface ShareProjectDto {
   projectId: number;
   groupId: number;
@@ -21,6 +31,17 @@ export function getProjects() {
 
 export function getProject(id: number) {
   return http.get<ProjectDto>(`/projects/${id}`);
+}
+
+export function getProjectRepo(projectId: number) {
+  return http.get<ProjectRepoDto>(`/projects/${projectId}/repo`);
+}
+
+export function updateProjectRepo(
+  projectId: number,
+  dto: { repoUrl?: string; repoProvider?: string; repoDefaultBranch?: string; gitSyncEnabled?: boolean; rotateWebhookSecret?: boolean },
+) {
+  return http.patch<ProjectRepoDto>(`/projects/${projectId}/repo`, dto);
 }
 
 export function getProjectMembers(projectId: number) {

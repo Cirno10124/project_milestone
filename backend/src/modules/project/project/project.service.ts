@@ -4,11 +4,13 @@ import { Repository } from 'typeorm';
 import { Project } from '../entities/project.entity';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { UpdateProjectDto } from '../dto/update-project.dto';
+import { UpdateProjectRepoDto } from '../dto/update-project-repo.dto';
 import { Task } from '../../task/entities/task.entity';
 import { WbsItem } from '../../wbs-item/entities/wbs-item.entity';
 import * as ExcelJS from 'exceljs';
 import { ProjectMember } from '../entities/project-member.entity';
 import { OrgMember } from '../../org/entities/org-member.entity';
+import crypto from 'crypto';
 
 @Injectable()
 export class ProjectService {
@@ -70,6 +72,65 @@ export class ProjectService {
     if (role !== 'admin') throw new ForbiddenException('需要项目管理员权限');
     await this.projectRepo.update({ id, orgId }, updateDto);
     return this.findOne(id, userId, orgId, isSuperAdmin);
+  }
+
+  private genWebhookSecret() {
+    // 32 bytes => 64 hex chars
+    return crypto.randomBytes(32).toString('hex');
+  }
+
+  /**
+   * 管理员获取项目 Git 绑定信息（包含 webhook token）
+   * - webhookPath：相对路径，实际 URL 需要前端拼上后端域名
+   */
+  async getRepoSettingsWithAuth(id: number, userId: number, orgId: number, isSuperAdmin = false) {
+    const role = await this.getMyProjectRole(id, userId, orgId, isSuperAdmin);
+    if (role !== 'admin') throw new ForbiddenException('需要项目管理员权限');
+
+    const qb = this.projectRepo
+      .createQueryBuilder('p')
+      .where('p.id = :id AND p.org_id = :orgId', { id, orgId })
+      .addSelect('p.repoWebhookSecret');
+    const proj = await qb.getOne();
+    if (!proj) throw new NotFoundException(`Project #${id} not found`);
+
+    let secret = proj.repoWebhookSecret;
+    if (!secret) {
+      secret = this.genWebhookSecret();
+      await this.projectRepo.update({ id, orgId }, { repoWebhookSecret: secret } as any);
+    }
+
+    return {
+      repoUrl: proj.repoUrl ?? '',
+      repoProvider: proj.repoProvider ?? 'generic',
+      repoDefaultBranch: proj.repoDefaultBranch ?? '',
+      gitSyncEnabled: !!proj.gitSyncEnabled,
+      webhookPath: `/git/webhook/projects/${id}`,
+      webhookToken: secret,
+      lastGitEventAt: proj.lastGitEventAt ?? null,
+    };
+  }
+
+  /**
+   * 管理员设置项目 Git 绑定信息（可选：轮换 webhook token）
+   */
+  async updateRepoSettingsWithAuth(id: number, dto: UpdateProjectRepoDto, userId: number, orgId: number, isSuperAdmin = false) {
+    const role = await this.getMyProjectRole(id, userId, orgId, isSuperAdmin);
+    if (role !== 'admin') throw new ForbiddenException('需要项目管理员权限');
+
+    // 确保项目存在且属于 org
+    const exists = await this.projectRepo.findOne({ where: { id, orgId } as any });
+    if (!exists) throw new NotFoundException(`Project #${id} not found`);
+
+    const patch: Partial<Project> = {};
+    if (dto.repoUrl !== undefined) patch.repoUrl = (dto.repoUrl ?? '').trim() || null;
+    if (dto.repoProvider !== undefined) patch.repoProvider = (dto.repoProvider ?? '').trim() || null;
+    if (dto.repoDefaultBranch !== undefined) patch.repoDefaultBranch = (dto.repoDefaultBranch ?? '').trim() || null;
+    if (dto.gitSyncEnabled !== undefined) patch.gitSyncEnabled = !!dto.gitSyncEnabled;
+    if (dto.rotateWebhookSecret) patch.repoWebhookSecret = this.genWebhookSecret();
+
+    await this.projectRepo.update({ id, orgId }, patch as any);
+    return this.getRepoSettingsWithAuth(id, userId, orgId, isSuperAdmin);
   }
 
   async remove(id: number, userId: number, orgId: number, isSuperAdmin = false): Promise<void> {
