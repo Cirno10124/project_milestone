@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('user_account')
 export class UserAccount {
@@ -7,6 +13,13 @@ export class UserAccount {
 
   @Column({ type: 'varchar', length: 100, unique: true })
   username: string;
+
+  // 邮箱（与 username 分离；用于验证码注册/找回密码）
+  @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
+  email: string | null;
+
+  @Column({ name: 'email_verified', type: 'tinyint', default: 0 })
+  emailVerified: boolean;
 
   @Column({ name: 'password_hash', type: 'varchar', length: 255 })
   passwordHash: string;

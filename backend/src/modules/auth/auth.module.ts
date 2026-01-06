@@ -4,6 +4,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserAccount } from './entities/user.entity';
+import { EmailCodeService } from './email-code.service';
+import { EmailSenderService } from './email-sender.service';
 
 @Global()
 @Module({
@@ -14,7 +16,7 @@ import { UserAccount } from './entities/user.entity';
       signOptions: { expiresIn: '1h' },
     }),
   ],
-  providers: [AuthService],
+  providers: [AuthService, EmailCodeService, EmailSenderService],
   controllers: [AuthController],
   exports: [AuthService, JwtModule],
 })

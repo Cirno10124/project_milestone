@@ -38,10 +38,9 @@ export const useAuthStore = defineStore('auth', () => {
     router.push('/projects');
   }
 
-  async function register(credentials: { username: string; password: string }) {
+  async function register(credentials: { username: string; email: string; password: string; code: string }) {
     await registerApi(credentials);
-    // 注册完成后跳转到登录页，用户需手动登录
-    router.push('/auth/login');
+    // 由页面决定注册后的跳转（例如展示“注册成功”页）
   }
 
   async function fetchUser() {

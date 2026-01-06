@@ -14,10 +14,12 @@ import { OrgModule } from './modules/org/org.module';
 import { GroupModule } from './modules/group/group.module';
 import { DevModule } from './modules/dev/dev.module';
 import { GitModule } from './modules/git/git.module';
+import { RedisModule } from './modules/redis/redis.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot(typeOrmConfig),
+    RedisModule,
     AuthModule,
     OrgModule,
     GroupModule,
