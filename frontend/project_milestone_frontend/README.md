@@ -18,7 +18,7 @@
 
 关键变量：
 
-- **VITE_API_URL**: 后端 API 基地址（默认 `http://localhost:3000`）
+- **VITE_API_URL**: 后端 API 基地址（默认 `http://localhost:3000`）。若你用局域网 IP 打开前端（例如 `http://192.168.0.109:5173`），请把它改成 `http://192.168.0.109:3000`
 
 ## 快速开始（Windows / PowerShell）
 
@@ -37,7 +37,7 @@ npm run dev
 
 - **Authorization**: 前端会把 `localStorage.token` 作为 `Bearer <token>` 放到请求头（见 `src/utils/http.ts`）
 - **X-Org-Id**: 若已选择组织，前端会把 `currentOrgId` 放到请求头（见 `src/utils/http.ts`）
-- **后端跨域**: 后端默认只允许 `CORS_ORIGIN=http://localhost:5173`，若你改了前端端口/域名，需要同步改后端 `CORS_ORIGIN`
+- **后端跨域**: 后端用 `CORS_ORIGIN` 控制允许的前端来源，支持逗号分隔多个 Origin（例如 `http://localhost:5173,http://192.168.0.109:5173`）
 
 ## 常用脚本
 

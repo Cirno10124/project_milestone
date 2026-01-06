@@ -321,7 +321,9 @@ const error = ref<string>('');
 const isAdmin = computed(() => project.value.role === 'admin');
 
 // Git repo binding
-const apiBaseUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000';
+const apiBaseUrl =
+  import.meta.env.VITE_API_URL ||
+  `${window.location.protocol}//${window.location.hostname}:3000`;
 const repoSaving = ref(false);
 const repoError = ref('');
 const repoForm = ref({ repoUrl: '', repoProvider: 'gitlab', repoDefaultBranch: '', gitSyncEnabled: false });
