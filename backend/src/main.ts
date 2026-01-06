@@ -18,8 +18,24 @@ async function bootstrap() {
     }),
   );
   // 启用 CORS，允许前端跨域
+  // 支持逗号分隔的多 Origin（例如：http://localhost:5173,http://192.168.0.109:5173）
+  const corsOriginsRaw = process.env.CORS_ORIGIN || 'http://localhost:5173';
+  const corsOrigins = new Set<string>(
+    corsOriginsRaw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      // 非浏览器场景（如 curl/Postman/服务器间调用）可能不带 Origin，直接放行
+      if (!origin) return callback(null, true);
+      if (corsOrigins.has(origin)) return callback(null, true);
+      return callback(new Error(`CORS blocked for origin: ${origin}`), false);
+    },
     credentials: true,
   });
   await app.listen(process.env.PORT ?? 3000);
