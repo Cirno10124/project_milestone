@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import nodemailer from 'nodemailer';
 
 type NodemailerLike = {
@@ -9,6 +13,7 @@ type NodemailerLike = {
 
 @Injectable()
 export class EmailSenderService {
+  private readonly logger = new Logger(EmailSenderService.name);
   private readonly transporter = (
     nodemailer as unknown as NodemailerLike
   ).createTransport({
@@ -35,6 +40,13 @@ export class EmailSenderService {
     code: string;
     ttlSeconds: number;
   }) {
+    // 提前给出更清晰的配置错误（否则 nodemailer 会抛较隐晦的错误）
+    if (!process.env.SMTP_HOST) {
+      this.logger.error('SMTP_HOST 未配置，无法发送邮件验证码');
+      throw new InternalServerErrorException(
+        '邮件服务未配置（缺少 SMTP_HOST）',
+      );
+    }
     const subject =
       params.purpose === 'register' ? '注册验证码' : '重置密码验证码';
     const text = [
@@ -51,7 +63,14 @@ export class EmailSenderService {
         subject,
         text,
       });
-    } catch {
+    } catch (err) {
+      // 记录内部错误，便于定位（例如 SMTP 连接/认证/证书问题）
+      const detail =
+        err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
+      this.logger.error(
+        `邮件发送失败 to=${params.to} purpose=${params.purpose}`,
+        detail,
+      );
       // 不向客户端暴露内部错误细节
       throw new InternalServerErrorException('邮件发送失败，请稍后重试');
     }

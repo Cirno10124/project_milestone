@@ -5,6 +5,7 @@ import {
   Get,
   Headers,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -19,6 +20,7 @@ import {
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
   constructor(
     private readonly authService: AuthService,
     private readonly emailCodeService: EmailCodeService,
@@ -41,19 +43,32 @@ export class AuthController {
    */
   @Post('email/send-code')
   async sendEmailCode(@Body() dto: SendEmailCodeDto) {
-    const { sent, code } = await this.emailCodeService.sendCode(
-      dto.email,
-      dto.purpose,
-    );
-    if (sent && code) {
-      await this.emailSender.sendVerificationCode({
-        to: dto.email,
-        purpose: dto.purpose,
-        code,
-        ttlSeconds: +(process.env.EMAIL_CODE_TTL_SECONDS || 600),
-      });
+    try {
+      const { sent, code } = await this.emailCodeService.sendCode(
+        dto.email,
+        dto.purpose,
+      );
+      this.logger.log(
+        `sendEmailCode purpose=${dto.purpose} email=${dto.email} sent=${sent}`,
+      );
+      if (sent && code) {
+        await this.emailSender.sendVerificationCode({
+          to: dto.email,
+          purpose: dto.purpose,
+          code,
+          ttlSeconds: +(process.env.EMAIL_CODE_TTL_SECONDS || 600),
+        });
+      }
+      return { ok: true };
+    } catch (err) {
+      const detail =
+        err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
+      this.logger.error(
+        `sendEmailCode failed purpose=${dto.purpose} email=${dto.email}`,
+        detail,
+      );
+      throw err;
     }
-    return { ok: true };
   }
 
   /**
