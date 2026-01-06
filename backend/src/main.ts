@@ -26,6 +26,7 @@ async function bootstrap() {
       .map((s) => s.trim())
       .filter(Boolean),
   );
+  const corsAllowAll = corsOrigins.has('*');
   app.enableCors({
     origin: (
       origin: string | undefined,
@@ -33,6 +34,8 @@ async function bootstrap() {
     ) => {
       // 非浏览器场景（如 curl/Postman/服务器间调用）可能不带 Origin，直接放行
       if (!origin) return callback(null, true);
+      // 开发兜底：CORS_ORIGIN=* 表示允许所有来源（生产环境不建议）
+      if (corsAllowAll) return callback(null, true);
       if (corsOrigins.has(origin)) return callback(null, true);
       return callback(new Error(`CORS blocked for origin: ${origin}`), false);
     },
