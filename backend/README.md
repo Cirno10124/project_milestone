@@ -30,6 +30,7 @@
 - **DB_NAME**: 数据库名（默认 `project_milestone`）
 - **JWT_SECRET**: JWT 签名密钥（默认 `changeme`，生产务必修改）
 - **SUPER_ADMIN_USERNAME**: 注册时若用户名等于该值，会被标记为超级管理员（可选）
+- **EMAIL_SENDER_PROVIDER**: 邮件发送通道：`smtp`（默认）或 `http`（邮件 API/自建中转）
 - **DEV_ADMIN_SECRET**: Dev-only 提权接口使用的密钥（可选，但启用接口时必须配置）
 - **DEV_SECRET_DEBUG**: `1` 时在非生产环境打印 dev secret 调试信息（默认 `0`）
 

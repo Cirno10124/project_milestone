@@ -52,6 +52,21 @@ export class AuthController {
         `sendEmailCode purpose=${dto.purpose} email=${dto.email} sent=${sent}`,
       );
       if (sent && code) {
+        // 开发期兜底：禁用真实发信，避免被 SMTP/网络环境卡住功能联调
+        // 用法：
+        // - DEV_EMAIL_SENDER=console   (仅打印验证码到后端日志)
+        // - DEV_RETURN_EMAIL_CODE=1   (可选：把验证码回传给前端，生产环境不要开)
+        const isProd = process.env.NODE_ENV === 'production';
+        const devEmailSender = process.env.DEV_EMAIL_SENDER;
+        const devReturnEmailCode = process.env.DEV_RETURN_EMAIL_CODE === '1';
+        if (!isProd && devEmailSender === 'console') {
+          this.logger.warn(
+            `DEV_EMAIL_SENDER=console: purpose=${dto.purpose} email=${dto.email} code=${code}`,
+          );
+          return devReturnEmailCode
+            ? { ok: true, devCode: code }
+            : { ok: true };
+        }
         await this.emailSender.sendVerificationCode({
           to: dto.email,
           purpose: dto.purpose,
