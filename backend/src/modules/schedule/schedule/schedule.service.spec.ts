@@ -20,7 +20,7 @@ describe('ScheduleService', () => {
   let mockItemRepo: Partial<Repository<ScheduleItem>>;
 
   beforeEach(async () => {
-    mockProjectRepo = { findOne: jest.fn().mockResolvedValue({ id: 1, startDate: '2025-10-01' }) };
+    mockProjectRepo = { findOne: jest.fn().mockResolvedValue({ id: 1, startDate: '2025-10-01' }), update: jest.fn().mockResolvedValue({ affected: 1 }) as any };
     mockTaskRepo = { find: jest.fn().mockResolvedValue([
       { id: 1, duration: 3, predecessors: [], wbsItem: { project: { id: 1 } } },
       { id: 2, duration: 2, predecessors: [{ predecessorId: 1 }], wbsItem: { project: { id: 1 } } }
@@ -52,8 +52,15 @@ describe('ScheduleService', () => {
   it('computeSchedule should return saved run', async () => {
     const result = await service.computeSchedule(1, 'initial');
     expect(mockProjectRepo.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+    expect(mockProjectRepo.update).not.toHaveBeenCalled();
     expect(mockTaskRepo.find).toHaveBeenCalled();
     expect(mockRunRepo.save).toHaveBeenCalled();
     expect(result).toEqual({ id: 100 });
+  });
+
+  it('computeSchedule should set project startDate on first compute when missing', async () => {
+    (mockProjectRepo.findOne as jest.Mock).mockResolvedValueOnce({ id: 1, startDate: null });
+    await service.computeSchedule(1, 'initial');
+    expect(mockProjectRepo.update).toHaveBeenCalledWith({ id: 1 }, { startDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) });
   });
 });

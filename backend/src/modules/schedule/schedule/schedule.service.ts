@@ -26,6 +26,23 @@ export class ScheduleService {
     private readonly projectMemberRepo: Repository<ProjectMember>,
   ) {}
 
+  private formatDateOnlyLocal(d: Date): string {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  private parseDateOnlyLocal(s: string): Date | null {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s ?? '').trim());
+    if (!m) return null;
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+    if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return null;
+    return new Date(y, mo - 1, d);
+  }
+
   async createRun(dto: CreateScheduleRunDto): Promise<ScheduleRun> {
     const entity = this.runRepo.create(dto);
     return this.runRepo.save(entity);
@@ -167,6 +184,13 @@ export class ScheduleService {
   async computeSchedule(projectId: number, runType: 'initial' | 'rolling', orgId?: number): Promise<ScheduleRun> {
     const project = orgId ? await this.getProjectEnsuringOrg(projectId, orgId) : await this.projectRepo.findOne({ where: { id: projectId } });
     if (!project) throw new NotFoundException(`Project #${projectId} not found`);
+
+    // 优化：如果项目未配置开始日期，则第一次触发计算时用“首次提交”的日期作为开始日期并落库
+    if (!String(project.startDate ?? '').trim()) {
+      const today = this.formatDateOnlyLocal(new Date());
+      project.startDate = today;
+      await this.projectRepo.update({ id: projectId } as any, { startDate: today } as any);
+    }
     const tasks = await this.taskRepo.find({ relations: ['predecessors', 'wbsItem', 'wbsItem.project'] });
     const projTasks = tasks.filter(t => t.wbsItem.project.id === projectId);
     const inDegree = new Map<number, number>();
@@ -179,7 +203,7 @@ export class ScheduleService {
       });
     });
     const es = new Map<number, Date>(); const ef = new Map<number, Date>();
-    const baseDate = project.startDate ? new Date(project.startDate) : new Date();
+    const baseDate = this.parseDateOnlyLocal(project.startDate) ?? new Date();
     projTasks.forEach(t => {
       es.set(t.id, new Date(baseDate));
       ef.set(t.id, new Date(baseDate.getTime() + (t.duration || 0) * 86400000));

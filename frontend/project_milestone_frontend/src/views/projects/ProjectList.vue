@@ -5,6 +5,7 @@
       <span style="margin-left: 10px;">
         当前组织：{{ authStore.currentOrgName || `#${authStore.currentOrgId}` }}
       </span>
+      <button @click="backToOrgSelect" style="margin-left: 10px;">切换组织</button>
     </div>
     <button @click="logout" style="float:right;">退出登录</button>
     <p v-if="error" class="error">{{ error }}</p>
@@ -43,6 +44,10 @@ onMounted(async () => {
 
 function toCreate() {
   router.push('/projects/create'); // 假设有创建页面
+}
+
+function backToOrgSelect() {
+  router.push('/org/select');
 }
 
 function logout() {
