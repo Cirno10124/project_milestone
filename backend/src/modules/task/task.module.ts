@@ -15,6 +15,7 @@ import { NotificationModule } from '../notification/notification.module';
     NotificationModule,
   ],
   providers: [TaskService],
-  controllers: [TaskController]
+  controllers: [TaskController],
+  exports: [TaskService],
 })
 export class TaskModule {}

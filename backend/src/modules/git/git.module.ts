@@ -3,16 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { GitController } from './git.controller';
 import { GitService } from './git.service';
 import { Project } from '../project/entities/project.entity';
-import { Task } from '../task/entities/task.entity';
-import { TaskService } from '../task/task/task.service';
-import { TaskAssignee } from '../task/entities/task-assignee.entity';
-import { ProjectMember } from '../project/entities/project-member.entity';
-import { WbsItem } from '../wbs-item/entities/wbs-item.entity';
+import { TaskModule } from '../task/task.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Project, Task, TaskAssignee, ProjectMember, WbsItem])],
+  imports: [TypeOrmModule.forFeature([Project]), TaskModule],
   controllers: [GitController],
-  providers: [GitService, TaskService],
+  providers: [GitService],
 })
 export class GitModule {}
 
