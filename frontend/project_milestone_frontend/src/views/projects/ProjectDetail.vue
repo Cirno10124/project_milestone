@@ -48,7 +48,7 @@
         <h4>Webhook 配置</h4>
         <div class="mono">Webhook URL：{{ apiBaseUrl }}{{ repoInfo.webhookPath }}</div>
         <div class="mono">Header：X-Project-Webhook-Token: {{ repoInfo.webhookToken }}</div>
-        <div v-if="repoInfo.lastGitEventAt" class="hint">最后一次收到 Git 事件：{{ repoInfo.lastGitEventAt }}</div>
+        <div v-if="repoInfo.lastGitEventAt" class="hint">最后一次收到 Git 事件：{{ formatBeijingDateTime(repoInfo.lastGitEventAt) }}</div>
 
         <h4 style="margin-top: 10px;">Commit message 规则（示例）</h4>
         <div class="mono">#task:12 progress:30%</div>
@@ -304,6 +304,7 @@ import mermaid from 'mermaid';
 // const { mermaidAPI } = mermaid;
 import { createDependency } from '@/api/dependency';
 import { computeSchedule } from '@/api/schedule';
+import { formatBeijingDateTime } from '@/utils/datetime';
 
 interface ProjectDetail {
   id: number;
