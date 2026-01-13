@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/auth';
+import router from '../router';
 
 const defaultBaseURL =
   typeof window !== 'undefined'
@@ -20,5 +21,46 @@ http.interceptors.request.use(config => {
   if (orgId) config.headers['X-Org-Id'] = String(orgId);
   return config;
 });
+
+http.interceptors.response.use(
+  res => res,
+  async err => {
+    const auth = useAuthStore();
+    const status: number | undefined = err?.response?.status;
+    const msg: string =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      '';
+
+    // JWT 失效/未登录：清理本地状态并回到登录页
+    if (status === 401) {
+      auth.logout();
+      return Promise.reject(err);
+    }
+
+    // 组织上下文缺失/不属于该组织：引导重新选择组织
+    if (
+      status === 400 &&
+      (String(msg).includes('缺少 X-Org-Id') ||
+        String(msg).includes('非法 X-Org-Id'))
+    ) {
+      auth.setCurrentOrgId(0);
+      if (router.currentRoute.value.path !== '/org/select') {
+        await router.push('/org/select');
+      }
+      return Promise.reject(err);
+    }
+    if (status === 403 && String(msg).includes('不属于该组织')) {
+      auth.setCurrentOrgId(0);
+      if (router.currentRoute.value.path !== '/org/select') {
+        await router.push('/org/select');
+      }
+      return Promise.reject(err);
+    }
+
+    return Promise.reject(err);
+  },
+);
 
 export default http;

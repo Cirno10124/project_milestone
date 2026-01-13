@@ -27,6 +27,10 @@ async function bootstrap() {
       .filter(Boolean),
   );
   const corsAllowAll = corsOrigins.has('*');
+  if (process.env.NODE_ENV === 'production' && corsAllowAll) {
+    // credentials=true 时反射 Origin 等同于“允许所有来源携带 Cookie/凭证访问”，生产环境风险极高
+    throw new Error('CORS_ORIGIN must not be * in production when credentials are enabled');
+  }
   app.enableCors({
     origin: (
       origin: string | undefined,

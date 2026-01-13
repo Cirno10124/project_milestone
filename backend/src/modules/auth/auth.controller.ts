@@ -4,8 +4,6 @@ import {
   Body,
   Get,
   Patch,
-  Headers,
-  UnauthorizedException,
   Logger,
   UseGuards,
 } from '@nestjs/common';
@@ -112,12 +110,7 @@ export class AuthController {
   async createResetToken(
     @Body() dto: CreatePasswordResetTokenDto,
   ): Promise<{ resetToken: string; expiresInSeconds: number }> {
-    const auth = this.authService as unknown as {
-      createPasswordResetToken(
-        p: CreatePasswordResetTokenDto,
-      ): Promise<{ resetToken: string; expiresInSeconds: number }>;
-    };
-    return await auth.createPasswordResetToken(dto);
+    return await this.authService.createPasswordResetToken(dto);
   }
 
   /**
@@ -125,20 +118,16 @@ export class AuthController {
    */
   @Post('password/reset')
   async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ ok: true }> {
-    const auth = this.authService as unknown as {
-      resetPassword(p: ResetPasswordDto): Promise<{ ok: true }>;
-    };
-    return await auth.resetPassword(dto);
+    return await this.authService.resetPassword(dto);
   }
 
   /**
    * 获取当前用户信息
    */
+  @UseGuards(JwtAuthGuard)
   @Get('me')
-  async getMe(@Headers('authorization') authHeader: string) {
-    if (!authHeader) throw new UnauthorizedException();
-    const token = authHeader.replace(/^Bearer\s+/i, '');
-    return this.authService.getProfile(token);
+  async getMe(@CurrentUser() user: RequestUser) {
+    return this.authService.getProfileByUserId(user.id);
   }
 
   /**

@@ -7,12 +7,17 @@ import { UserAccount } from './entities/user.entity';
 import { EmailCodeService } from './email-code.service';
 import { EmailSenderService } from './email-sender.service';
 
+const jwtSecret = (process.env.JWT_SECRET || '').trim();
+if (process.env.NODE_ENV === 'production' && (!jwtSecret || jwtSecret === 'changeme')) {
+  throw new Error('JWT_SECRET must be set to a non-default value in production');
+}
+
 @Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserAccount]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'changeme',
+      secret: jwtSecret || 'changeme',
       signOptions: { expiresIn: '1h' },
     }),
   ],

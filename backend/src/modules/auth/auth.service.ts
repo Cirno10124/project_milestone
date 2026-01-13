@@ -78,21 +78,25 @@ export class AuthService {
     return this.jwtService.verify(token);
   }
 
+  async getProfileByUserId(userId: number) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException();
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      ciNotifyEnabled: !!user.ciNotifyEnabled,
+      isSuperAdmin: !!user.isSuperAdmin,
+    };
+  }
+
   /**
    * 根据 JWT Token 返回当前用户信息
    */
   async getProfile(token: string) {
     try {
       const payload = this.verifyToken(token);
-      const user = await this.userRepo.findOne({ where: { id: payload.sub } });
-      if (!user) throw new UnauthorizedException();
-      return {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        ciNotifyEnabled: !!user.ciNotifyEnabled,
-        isSuperAdmin: !!user.isSuperAdmin,
-      };
+      return await this.getProfileByUserId(payload.sub);
     } catch {
       throw new UnauthorizedException();
     }
