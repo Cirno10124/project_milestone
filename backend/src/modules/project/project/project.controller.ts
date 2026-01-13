@@ -3,6 +3,7 @@ import { ProjectService } from './project.service';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { UpdateProjectDto } from '../dto/update-project.dto';
 import { UpdateProjectRepoDto } from '../dto/update-project-repo.dto';
+import { UpdateProjectNotificationsDto } from '../dto/update-project-notifications.dto';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { OrgGuard } from '../../../common/guards/org.guard';
@@ -52,6 +53,26 @@ export class ProjectController {
   @Patch(':id/repo')
   updateRepo(@Param('id') id: string, @Body() dto: UpdateProjectRepoDto, @CurrentUser() user: RequestUser, @OrgDecorator() org: OrgContext) {
     return this.projectService.updateRepoSettingsWithAuth(+id, dto, user.id, org.orgId, user.isSuperAdmin);
+  }
+
+  /**
+   * 通知设置（仅项目管理员）
+   */
+  @UseGuards(JwtAuthGuard, OrgGuard)
+  @Get(':id/notifications')
+  getNotifications(@Param('id') id: string, @CurrentUser() user: RequestUser, @OrgDecorator() org: OrgContext) {
+    return this.projectService.getNotificationSettingsWithAuth(+id, user.id, org.orgId, user.isSuperAdmin);
+  }
+
+  @UseGuards(JwtAuthGuard, OrgGuard)
+  @Patch(':id/notifications')
+  updateNotifications(
+    @Param('id') id: string,
+    @Body() dto: UpdateProjectNotificationsDto,
+    @CurrentUser() user: RequestUser,
+    @OrgDecorator() org: OrgContext,
+  ) {
+    return this.projectService.updateNotificationSettingsWithAuth(+id, dto, user.id, org.orgId, user.isSuperAdmin);
   }
 
   @UseGuards(JwtAuthGuard, OrgGuard)

@@ -15,6 +15,7 @@ import { GroupModule } from './modules/group/group.module';
 import { DevModule } from './modules/dev/dev.module';
 import { GitModule } from './modules/git/git.module';
 import { RedisModule } from './modules/redis/redis.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { RedisModule } from './modules/redis/redis.module';
     ...(process.env.NODE_ENV === 'production' ? [] : [DevModule]),
     ProjectModule,
     GitModule,
+    NotificationModule,
     WbsItemModule,
     TaskModule,
     DependencyModule,

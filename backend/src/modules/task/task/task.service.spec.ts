@@ -9,6 +9,7 @@ import { TaskAssignee } from '../entities/task-assignee.entity';
 import { ProjectMember } from '../../project/entities/project-member.entity';
 import { WbsItem } from '../../wbs-item/entities/wbs-item.entity';
 import { Project } from '../../project/entities/project.entity';
+import { NotificationService } from '../../notification/notification.service';
 
 describe('TaskService', () => {
   let service: TaskService;
@@ -24,6 +25,10 @@ describe('TaskService', () => {
       delete: jest.fn().mockResolvedValue({ affected: 1 }),
     };
     const noopRepo = {};
+    const notificationMock = {
+      notifyTaskCompleted: jest.fn(),
+      notifyMilestoneCompleted: jest.fn(),
+    };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TaskService,
@@ -32,6 +37,7 @@ describe('TaskService', () => {
         { provide: getRepositoryToken(ProjectMember), useValue: noopRepo },
         { provide: getRepositoryToken(WbsItem), useValue: noopRepo },
         { provide: getRepositoryToken(Project), useValue: noopRepo },
+        { provide: NotificationService, useValue: notificationMock },
       ],
     }).compile();
     service = module.get<TaskService>(TaskService);

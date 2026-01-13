@@ -143,13 +143,13 @@
         <label>基准任务</label>
         <select v-model.number="baseTaskId">
           <option disabled value="0">选择任务</option>
-          <option v-for="t in tasks" :key="t.id" :value="t.id">{{ t.name }}</option>
+          <option v-for="t in tasks" :key="t.id" :value="t.id">#{{ t.id }} {{ t.name }}</option>
         </select>
       </div>
       <div v-if="baseTaskId">
         <label>选择后继任务（多选）</label>
         <select v-model="succIds" multiple size="4">
-          <option v-for="t in allowedSuccessors" :key="t.id" :value="t.id">{{ t.name }}</option>
+          <option v-for="t in allowedSuccessors" :key="t.id" :value="t.id">#{{ t.id }} {{ t.name }}</option>
         </select>
       </div>
       <button @click="submitDependency">创建后继依赖</button>
@@ -186,7 +186,7 @@
         <tr v-for="t in tasks" :key="t.id" :class="{ critical: criticalTaskIds?.has(t.id) }">
           <td>
             <span v-if="criticalTaskIds?.has(t.id)" class="critical-badge">关键</span>
-            {{ t.name }}
+            #{{ t.id }} {{ t.name }}
           </td>
           <td>
             <span v-if="getAssigneeNames(t).length">{{ getAssigneeNames(t).join(', ') }}</span>
@@ -1153,7 +1153,7 @@ function toLinkableId(n: number) {
 
 function getTaskDisplayName(t: TaskDto) {
   const pct = Math.round(Number(t.percentComplete ?? 0));
-  return sanitizeMermaidText(`${t.name} (${pct}%)`);
+  return sanitizeMermaidText(`#${t.id} ${t.name} (${pct}%)`);
 }
 
 function getES(taskId: number) {

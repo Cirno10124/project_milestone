@@ -11,6 +11,8 @@ import * as ExcelJS from 'exceljs';
 import { ProjectMember } from '../entities/project-member.entity';
 import { OrgMember } from '../../org/entities/org-member.entity';
 import crypto from 'crypto';
+import { UpdateProjectNotificationsDto } from '../dto/update-project-notifications.dto';
+import type { ProjectNotifyScope } from '../entities/project.entity';
 
 @Injectable()
 export class ProjectService {
@@ -131,6 +133,47 @@ export class ProjectService {
 
     await this.projectRepo.update({ id, orgId }, patch as any);
     return this.getRepoSettingsWithAuth(id, userId, orgId, isSuperAdmin);
+  }
+
+  /**
+   * 通知设置（仅项目管理员）
+   */
+  async getNotificationSettingsWithAuth(id: number, userId: number, orgId: number, isSuperAdmin = false) {
+    const role = await this.getMyProjectRole(id, userId, orgId, isSuperAdmin);
+    if (role !== 'admin') throw new ForbiddenException('需要项目管理员权限');
+    const proj = await this.projectRepo.findOne({ where: { id, orgId } as any });
+    if (!proj) throw new NotFoundException(`Project #${id} not found`);
+    return {
+      notifyTaskComplete: !!proj.notifyTaskComplete,
+      notifyTaskCompleteScope: (proj.notifyTaskCompleteScope || 'admins') as ProjectNotifyScope,
+      notifyMilestoneComplete: !!proj.notifyMilestoneComplete,
+      notifyMilestoneCompleteScope: (proj.notifyMilestoneCompleteScope || 'admins') as ProjectNotifyScope,
+    };
+  }
+
+  async updateNotificationSettingsWithAuth(
+    id: number,
+    dto: UpdateProjectNotificationsDto,
+    userId: number,
+    orgId: number,
+    isSuperAdmin = false,
+  ) {
+    const role = await this.getMyProjectRole(id, userId, orgId, isSuperAdmin);
+    if (role !== 'admin') throw new ForbiddenException('需要项目管理员权限');
+
+    const exists = await this.projectRepo.findOne({ where: { id, orgId } as any });
+    if (!exists) throw new NotFoundException(`Project #${id} not found`);
+
+    const patch: Partial<Project> = {};
+    if (dto.notifyTaskComplete !== undefined) patch.notifyTaskComplete = !!dto.notifyTaskComplete;
+    if (dto.notifyTaskCompleteScope !== undefined)
+      patch.notifyTaskCompleteScope = (dto.notifyTaskCompleteScope || 'admins') as ProjectNotifyScope;
+    if (dto.notifyMilestoneComplete !== undefined) patch.notifyMilestoneComplete = !!dto.notifyMilestoneComplete;
+    if (dto.notifyMilestoneCompleteScope !== undefined)
+      patch.notifyMilestoneCompleteScope = (dto.notifyMilestoneCompleteScope || 'admins') as ProjectNotifyScope;
+
+    await this.projectRepo.update({ id, orgId } as any, patch as any);
+    return this.getNotificationSettingsWithAuth(id, userId, orgId, isSuperAdmin);
   }
 
   async remove(id: number, userId: number, orgId: number, isSuperAdmin = false): Promise<void> {

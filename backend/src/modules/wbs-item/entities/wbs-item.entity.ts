@@ -33,6 +33,10 @@ export class WbsItem {
   @Column('int', { default: 0 })
   seq: number;
 
+  // 里程碑（WBS 节点）首次完成时间：用于去重通知
+  @Column({ name: 'completed_at', type: 'datetime', nullable: true })
+  completedAt?: Date | null;
+
   @OneToMany(() => Task, (task) => task.wbsItem)
   tasks: Task[];
 }

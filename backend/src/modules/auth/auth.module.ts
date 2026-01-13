@@ -18,6 +18,6 @@ import { EmailSenderService } from './email-sender.service';
   ],
   providers: [AuthService, EmailCodeService, EmailSenderService],
   controllers: [AuthController],
-  exports: [AuthService, JwtModule],
+  exports: [AuthService, JwtModule, EmailSenderService],
 })
 export class AuthModule {}

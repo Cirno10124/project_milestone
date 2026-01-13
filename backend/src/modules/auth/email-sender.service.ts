@@ -129,6 +129,32 @@ export class EmailSenderService {
     }
   }
 
+  async sendTextMail(params: { to: string; subject: string; text: string }) {
+    try {
+      if (this.provider === 'http') {
+        await this.sendViaHttp(params);
+        return;
+      }
+
+      // SMTP（默认）
+      if (!this.smtpHost) {
+        this.logger.error('SMTP_HOST 未配置，无法发送邮件');
+        throw new InternalServerErrorException('邮件服务未配置（缺少 SMTP_HOST）');
+      }
+      await this.getSmtpTransporter().sendMail({
+        from: this.from(),
+        to: params.to,
+        subject: params.subject,
+        text: params.text,
+      });
+    } catch (err) {
+      const detail =
+        err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
+      this.logger.error(`邮件发送失败 to=${params.to}`, detail);
+      throw new InternalServerErrorException('邮件发送失败，请稍后重试');
+    }
+  }
+
   async sendVerificationCode(params: {
     to: string;
     purpose: 'register' | 'reset_password';
@@ -144,36 +170,7 @@ export class EmailSenderService {
       '如果不是你本人操作，请忽略本邮件。',
     ].join('\n');
 
-    try {
-      if (this.provider === 'http') {
-        await this.sendViaHttp({ to: params.to, subject, text });
-        return;
-      }
-
-      // SMTP（默认）
-      // 提前给出更清晰的配置错误（否则 nodemailer 会抛较隐晦的错误）
-      if (!this.smtpHost) {
-        this.logger.error('SMTP_HOST 未配置，无法发送邮件验证码');
-        throw new InternalServerErrorException(
-          '邮件服务未配置（缺少 SMTP_HOST）',
-        );
-      }
-      await this.getSmtpTransporter().sendMail({
-        from: this.from(),
-        to: params.to,
-        subject,
-        text,
-      });
-    } catch (err) {
-      // 记录内部错误，便于定位（例如 SMTP 连接/认证/证书问题）
-      const detail =
-        err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
-      this.logger.error(
-        `邮件发送失败 to=${params.to} purpose=${params.purpose}`,
-        detail,
-      );
-      // 不向客户端暴露内部错误细节
-      throw new InternalServerErrorException('邮件发送失败，请稍后重试');
-    }
+    // 复用通用发信（验证码同样走此路径）
+    await this.sendTextMail({ to: params.to, subject, text });
   }
 }

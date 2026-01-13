@@ -90,11 +90,26 @@ export class AuthService {
         id: user.id,
         username: user.username,
         email: user.email,
+        ciNotifyEnabled: !!user.ciNotifyEnabled,
         isSuperAdmin: !!user.isSuperAdmin,
       };
     } catch {
       throw new UnauthorizedException();
     }
+  }
+
+  async getMyNotificationSettings(userId: number) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException();
+    return { ciNotifyEnabled: !!user.ciNotifyEnabled } as const;
+  }
+
+  async updateMyNotificationSettings(userId: number, patch: { ciNotifyEnabled?: boolean }) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException();
+    if (patch.ciNotifyEnabled !== undefined) user.ciNotifyEnabled = !!patch.ciNotifyEnabled;
+    await this.userRepo.save(user);
+    return { ciNotifyEnabled: !!user.ciNotifyEnabled } as const;
   }
 
   /**

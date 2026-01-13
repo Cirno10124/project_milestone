@@ -8,6 +8,7 @@ import { TaskAssignee } from '../entities/task-assignee.entity';
 import { ProjectMember } from '../../project/entities/project-member.entity';
 import { WbsItem } from '../../wbs-item/entities/wbs-item.entity';
 import { Project } from '../../project/entities/project.entity';
+import { NotificationService } from '../../notification/notification.service';
 
 @Injectable()
 export class TaskService {
@@ -22,7 +23,14 @@ export class TaskService {
     private readonly wbsRepo: Repository<WbsItem>,
     @InjectRepository(Project)
     private readonly projectRepo: Repository<Project>,
+    private readonly notificationService: NotificationService,
   ) {}
+
+  private isCompleted(task: Task | null | undefined) {
+    if (!task) return false;
+    const pct = Number(task.percentComplete ?? 0);
+    return task.status === 'completed' || (Number.isFinite(pct) && pct >= 100);
+  }
 
   async create(createDto: CreateTaskDto): Promise<Task> {
     // 手动设置字段以持久化 wbs_item_id
@@ -96,7 +104,13 @@ export class TaskService {
   async updateWithAuth(id: number, updateDto: UpdateTaskDto, userId: number, orgId: number, isSuperAdmin = false): Promise<Task> {
     const projectId = await this.getProjectIdByTask(id);
     await this.assertProjectAdmin(projectId, userId, orgId, isSuperAdmin);
-    return this.update(id, updateDto);
+    const before = await this.findOne(id);
+    const after = await this.update(id, updateDto);
+    if (!this.isCompleted(before) && this.isCompleted(after)) {
+      await this.notificationService.notifyTaskCompleted({ projectId, taskId: after.id });
+      await this.maybeHandleMilestoneCompleted(after.wbsItemId, projectId);
+    }
+    return after;
   }
 
   /**
@@ -105,7 +119,27 @@ export class TaskService {
   async updateFromWebhook(projectId: number, taskId: number, updateDto: UpdateTaskDto): Promise<Task> {
     const realProjectId = await this.getProjectIdByTask(taskId);
     if (realProjectId !== projectId) throw new ForbiddenException('任务不属于该项目');
-    return this.update(taskId, updateDto);
+    const before = await this.findOne(taskId);
+    const after = await this.update(taskId, updateDto);
+    if (!this.isCompleted(before) && this.isCompleted(after)) {
+      await this.notificationService.notifyTaskCompleted({ projectId, taskId: after.id });
+      await this.maybeHandleMilestoneCompleted(after.wbsItemId, projectId);
+    }
+    return after;
+  }
+
+  private async maybeHandleMilestoneCompleted(wbsItemId: number, projectId: number) {
+    const wbs = await this.wbsRepo.findOne({ where: { id: wbsItemId } });
+    if (!wbs) return;
+    if (wbs.completedAt) return; // 已经完成过（用于去重）
+
+    const tasks = await this.taskRepo.find({ where: { wbsItemId } as any });
+    if (!tasks || tasks.length === 0) return;
+    const allDone = tasks.every((t) => this.isCompleted(t));
+    if (!allDone) return;
+
+    await this.wbsRepo.update({ id: wbsItemId } as any, { completedAt: new Date() } as any);
+    await this.notificationService.notifyMilestoneCompleted({ projectId, wbsItemId });
   }
 
   async remove(id: number): Promise<void> {

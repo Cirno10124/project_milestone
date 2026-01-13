@@ -21,6 +21,10 @@ export class UserAccount {
   @Column({ name: 'email_verified', type: 'tinyint', default: 0 })
   emailVerified: boolean;
 
+  // CI 结果通知（个人开关）
+  @Column({ name: 'ci_notify_enabled', type: 'tinyint', default: 1 })
+  ciNotifyEnabled: boolean;
+
   @Column({ name: 'password_hash', type: 'varchar', length: 255 })
   passwordHash: string;
 

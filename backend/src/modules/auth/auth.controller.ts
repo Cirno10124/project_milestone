@@ -3,9 +3,11 @@ import {
   Post,
   Body,
   Get,
+  Patch,
   Headers,
   UnauthorizedException,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -17,6 +19,10 @@ import {
   CreatePasswordResetTokenDto,
   ResetPasswordDto,
 } from './dto/password-reset.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { RequestUser } from '../../common/guards/jwt-auth.guard';
+import { UpdateMyNotificationSettingsDto } from './dto/notification-settings.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -133,5 +139,23 @@ export class AuthController {
     if (!authHeader) throw new UnauthorizedException();
     const token = authHeader.replace(/^Bearer\s+/i, '');
     return this.authService.getProfile(token);
+  }
+
+  /**
+   * 当前用户：通知设置（CI 结果通知）
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('me/notification-settings')
+  async getMyNotificationSettings(@CurrentUser() user: RequestUser) {
+    return this.authService.getMyNotificationSettings(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/notification-settings')
+  async updateMyNotificationSettings(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: UpdateMyNotificationSettingsDto,
+  ) {
+    return this.authService.updateMyNotificationSettings(user.id, dto);
   }
 }

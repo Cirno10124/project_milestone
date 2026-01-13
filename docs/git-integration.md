@@ -11,7 +11,7 @@
 - 负责告诉团队成员：任务 ID 如何填写到 commit message 里
 
 ### 普通成员（Member）
-- 无需配置 GitLab
+- 在内网时配置 GitLab的SSH密钥，使用外网则无需配置。
 - 只需要在提交时按约定写 commit message，即可触发进度自动更新
 
 ---
@@ -92,7 +92,7 @@
 
 ## 四、重要限制与注意事项
 
-- **只有项目管理员**能配置仓库与 webhook；普通成员无需配置。
+- 项目管理员能配置仓库与 webhook；普通成员无需配置。
 - 系统只处理 **push 事件**（GitLab Webhook：Push events）。
 - 如果项目未勾选 **“启用 commit 自动更新任务进度”**，即使 webhook 正常到达也会被系统忽略。
 - 系统会校验 webhook token（`X-Gitlab-Token` / `X-Project-Webhook-Token`），不匹配会拒绝处理。

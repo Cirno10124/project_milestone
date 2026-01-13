@@ -1,6 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { WbsItem } from '../../wbs-item/entities/wbs-item.entity';
 
+export type ProjectNotifyScope = 'admins' | 'all';
+
 @Entity('project')
 export class Project {
   @PrimaryGeneratedColumn()
@@ -42,6 +44,32 @@ export class Project {
 
   @Column({ name: 'last_git_event_at', type: 'datetime', nullable: true })
   lastGitEventAt?: Date;
+
+  /**
+   * 通知配置（任务完成 / 里程碑完成）
+   * - 仅项目管理员可配置（API 层做鉴权）
+   */
+  @Column({ name: 'notify_task_complete', type: 'tinyint', default: 0 })
+  notifyTaskComplete?: boolean;
+
+  @Column({
+    name: 'notify_task_complete_scope',
+    type: 'varchar',
+    length: 16,
+    default: 'admins',
+  })
+  notifyTaskCompleteScope?: ProjectNotifyScope;
+
+  @Column({ name: 'notify_milestone_complete', type: 'tinyint', default: 0 })
+  notifyMilestoneComplete?: boolean;
+
+  @Column({
+    name: 'notify_milestone_complete_scope',
+    type: 'varchar',
+    length: 16,
+    default: 'admins',
+  })
+  notifyMilestoneCompleteScope?: ProjectNotifyScope;
 
   @OneToMany(() => WbsItem, (item) => item.project)
   wbsItems: WbsItem[];

@@ -7,9 +7,13 @@ import { TaskAssignee } from './entities/task-assignee.entity';
 import { ProjectMember } from '../project/entities/project-member.entity';
 import { WbsItem } from '../wbs-item/entities/wbs-item.entity';
 import { Project } from '../project/entities/project.entity';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Task, TaskAssignee, ProjectMember, WbsItem, Project])],
+  imports: [
+    TypeOrmModule.forFeature([Task, TaskAssignee, ProjectMember, WbsItem, Project]),
+    NotificationModule,
+  ],
   providers: [TaskService],
   controllers: [TaskController]
 })

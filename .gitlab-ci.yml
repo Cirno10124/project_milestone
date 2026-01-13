@@ -1,6 +1,7 @@
 stages:
   - test
   - build
+  - notify
 
 default:
   image: node:20
@@ -87,6 +88,79 @@ backend:build:
     paths:
       - backend/dist/
   <<: *rules_on_branch_or_mr
+
+# --------------------
+# CI Notify（可选）：将 CI 结果推送给提交者邮箱
+# 你需要在 GitLab CI/CD Variables 里配置：
+# - CI_NOTIFY_ENDPOINT: 例如 https://<backend-domain>/ci/report
+# - CI_WEBHOOK_SECRET: 与后端环境变量 CI_WEBHOOK_SECRET 一致
+# --------------------
+ci:notify:
+  stage: notify
+  image: node:20
+  when: always
+  allow_failure: true
+  script:
+    - node --version
+    - |
+      if [ -z "$CI_NOTIFY_ENDPOINT" ] || [ -z "$CI_WEBHOOK_SECRET" ]; then
+        echo "CI_NOTIFY_ENDPOINT / CI_WEBHOOK_SECRET not set, skip notify"
+        exit 0
+      fi
+    - |
+      set -e
+      PIPELINE_STATUS="${CI_PIPELINE_STATUS:-unknown}"
+      STATUS="pending"
+      if [ "$PIPELINE_STATUS" = "success" ]; then STATUS="success"; fi
+      if [ "$PIPELINE_STATUS" = "failed" ]; then STATUS="failed"; fi
+      if [ "$PIPELINE_STATUS" = "canceled" ]; then STATUS="canceled"; fi
+      if [ "$PIPELINE_STATUS" = "running" ]; then STATUS="running"; fi
+
+      USER_EMAIL="${GITLAB_USER_EMAIL:-}"
+      USER_NAME="${GITLAB_USER_NAME:-${GITLAB_USER_LOGIN:-}}"
+
+      # Fallback: parse email from CI_COMMIT_AUTHOR like "Name <email@xx>"
+      if [ -z "$USER_EMAIL" ] && [ -n "$CI_COMMIT_AUTHOR" ]; then
+        USER_EMAIL="$(echo "$CI_COMMIT_AUTHOR" | sed -n 's/.*<\([^>]*\)>.*/\1/p')"
+      fi
+
+      ERROR_LOG=""
+      if [ "$STATUS" = "failed" ] && [ -n "$CI_API_V4_URL" ] && [ -n "$CI_PROJECT_ID" ] && [ -n "$CI_PIPELINE_ID" ]; then
+        # Best-effort: fetch a failed job trace via API (requires JOB-TOKEN access)
+        JOBS_JSON="$(curl -sS --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          "$CI_API_V4_URL/projects/$CI_PROJECT_ID/pipelines/$CI_PIPELINE_ID/jobs?scope[]=failed&per_page=1" || true)"
+        FAILED_JOB_ID="$(node -e "const fs=require('fs');let s='';process.stdin.on('data',c=>s+=c);process.stdin.on('end',()=>{try{const a=JSON.parse(s||'[]');process.stdout.write(String(a?.[0]?.id||''));}catch{}});" <<< "$JOBS_JSON")"
+        if [ -n "$FAILED_JOB_ID" ]; then
+          TRACE="$(curl -sS --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+            "$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/$FAILED_JOB_ID/trace" || true)"
+          ERROR_LOG="$(echo "$TRACE" | tail -n 120)"
+        fi
+      fi
+
+      PAYLOAD="$(node - <<'NODE'
+      const env = process.env;
+      const payload = {
+        status: env.STATUS || 'pending',
+        projectPath: env.CI_PROJECT_PATH || '',
+        ref: env.CI_COMMIT_REF_NAME || '',
+        sha: env.CI_COMMIT_SHA || '',
+        title: env.CI_COMMIT_TITLE || '',
+        userEmail: env.USER_EMAIL || '',
+        userName: env.USER_NAME || '',
+        errorLog: env.ERROR_LOG || '',
+      };
+      console.log(JSON.stringify(payload));
+NODE
+      )"
+
+      curl -sS -X POST "$CI_NOTIFY_ENDPOINT" \
+        -H "Content-Type: application/json" \
+        -H "X-CI-Token: $CI_WEBHOOK_SECRET" \
+        --data "$PAYLOAD" \
+        || true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
 
 # --------------------
 # Python（可选）：仓库存在 pyproject/requirements 时自动启用
