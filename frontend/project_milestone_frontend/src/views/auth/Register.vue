@@ -1,36 +1,85 @@
 <template>
-  <div class="register-container">
-    <h1>注册</h1>
-    <form @submit.prevent="onSubmit">
-      <div>
-        <label for="username">用户名</label>
-        <input id="username" v-model="form.username" type="text" required />
+  <div class="pm-auth-shell">
+    <div class="pm-card pm-auth-card">
+      <div class="pm-card__header">
+        <h1 class="pm-title">注册</h1>
+        <p class="pm-subtitle">创建账号后即可开始创建项目与任务</p>
       </div>
-      <div>
-        <label for="email">邮箱</label>
-        <input id="email" v-model="form.email" type="email" required />
+      <div class="pm-card__body">
+        <form class="pm-form" @submit.prevent="onSubmit">
+          <div class="pm-field">
+            <label for="username">用户名</label>
+            <input
+              id="username"
+              v-model="form.username"
+              class="pm-input"
+              type="text"
+              autocomplete="username"
+              required
+            />
+          </div>
+
+          <div class="pm-field">
+            <label for="email">邮箱</label>
+            <input
+              id="email"
+              v-model="form.email"
+              class="pm-input"
+              type="email"
+              autocomplete="email"
+              required
+            />
+          </div>
+
+          <div class="pm-code-row">
+            <div class="pm-field">
+              <label for="code">验证码</label>
+              <input id="code" v-model="form.code" class="pm-input" type="text" required />
+            </div>
+            <button
+              type="button"
+              class="pm-btn pm-btn--secondary"
+              :disabled="sendingCode || cooldownLeft > 0"
+              @click="onSendCode"
+            >
+              {{ cooldownLeft > 0 ? `重新发送(${cooldownLeft}s)` : '发送验证码' }}
+            </button>
+          </div>
+
+          <div class="pm-field">
+            <label for="password">密码</label>
+            <input
+              id="password"
+              v-model="form.password"
+              class="pm-input"
+              type="password"
+              autocomplete="new-password"
+              required
+            />
+          </div>
+          <div class="pm-field">
+            <label for="confirm">确认密码</label>
+            <input
+              id="confirm"
+              v-model="form.confirmPassword"
+              class="pm-input"
+              type="password"
+              autocomplete="new-password"
+              required
+            />
+          </div>
+
+          <p v-if="error" class="pm-error">{{ error }}</p>
+
+          <div class="pm-actions pm-actions--right">
+            <button type="button" class="pm-btn pm-btn--secondary" @click="goToLogin">
+              返回登录
+            </button>
+            <button type="submit" class="pm-btn pm-btn--primary">注册</button>
+          </div>
+        </form>
       </div>
-      <div class="code-row">
-        <div class="code-input">
-          <label for="code">验证码</label>
-          <input id="code" v-model="form.code" type="text" required />
-        </div>
-        <button type="button" class="code-btn" :disabled="sendingCode || cooldownLeft > 0" @click="onSendCode">
-          {{ cooldownLeft > 0 ? `重新发送(${cooldownLeft}s)` : '发送验证码' }}
-        </button>
-      </div>
-      <div>
-        <label for="password">密码</label>
-        <input id="password" v-model="form.password" type="password" required />
-      </div>
-      <div>
-        <label for="confirm">确认密码</label>
-        <input id="confirm" v-model="form.confirmPassword" type="password" required />
-      </div>
-      <button type="submit">注册</button>
-      <button type="button" @click="goToLogin">返回登录</button>
-    </form>
-    <p v-if="error" class="error">{{ error }}</p>
+    </div>
   </div>
 </template>
 
@@ -126,46 +175,4 @@ function goToLogin() {
 }
 </script>
 
-<style scoped>
-.register-container {
-  max-width: 400px;
-  margin: 100px auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-.register-container div {
-  margin-bottom: 15px;
-}
-.register-container label {
-  display: block;
-  margin-bottom: 5px;
-}
-.register-container input {
-  width: 100%;
-  padding: 8px;
-  box-sizing: border-box;
-}
-.code-row {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-}
-.code-input {
-  flex: 1;
-}
-.code-btn {
-  height: 34px;
-  padding: 0 12px;
-  white-space: nowrap;
-}
-.error {
-  color: red;
-  margin-top: 10px;
-}
-</style>
-
-
-
-
-
+<style scoped></style>

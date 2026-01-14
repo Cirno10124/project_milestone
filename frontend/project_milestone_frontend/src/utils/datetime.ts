@@ -31,7 +31,8 @@ export function formatBeijingDateTime(input: string | number | Date): string {
   const hh = pick('hour');
   const mi = pick('minute');
   const ss = pick('second');
-  if (!yyyy || !mm || !dd) return fmt.format(d);
+  // 若任一部件缺失，则退回 Intl 默认输出，避免拼出 "2024-01-14  ::"
+  if (!yyyy || !mm || !dd || !hh || !mi || !ss) return fmt.format(d);
   return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
 }
 

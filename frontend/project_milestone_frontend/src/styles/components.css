@@ -1,0 +1,192 @@
+@import './tokens.css';
+
+/* 通用布局 */
+.pm-page {
+  min-height: 100vh;
+}
+
+.pm-container {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: var(--pm-space-6);
+}
+
+.pm-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-4);
+}
+
+.pm-row {
+  display: flex;
+  gap: var(--pm-space-3);
+  align-items: center;
+}
+
+.pm-row--between {
+  justify-content: space-between;
+}
+
+/* Card */
+.pm-card {
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-lg);
+  box-shadow: var(--pm-shadow-md);
+}
+
+.pm-card__header {
+  padding: var(--pm-space-6) var(--pm-space-6) 0 var(--pm-space-6);
+}
+
+.pm-card__body {
+  padding: var(--pm-space-6);
+}
+
+.pm-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.pm-subtitle {
+  margin-top: var(--pm-space-2);
+  color: var(--pm-text-muted);
+  font-size: 13px;
+}
+
+/* Form */
+.pm-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-4);
+}
+
+.pm-field label {
+  display: block;
+  font-size: 13px;
+  color: var(--pm-text-muted);
+  margin-bottom: var(--pm-space-2);
+}
+
+.pm-input,
+.pm-select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--pm-radius-md);
+  border: 1px solid var(--pm-border);
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pm-input:focus,
+.pm-select:focus {
+  border-color: rgba(37, 99, 235, 0.8);
+  box-shadow: var(--pm-ring);
+}
+
+.pm-help {
+  font-size: 12px;
+  color: var(--pm-text-muted);
+}
+
+.pm-error {
+  font-size: 13px;
+  color: var(--pm-danger);
+}
+
+/* Buttons */
+.pm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: var(--pm-radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    transform 0.02s ease;
+}
+
+.pm-btn:active {
+  transform: translateY(1px);
+}
+
+.pm-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pm-btn--primary {
+  background: var(--pm-primary);
+  color: #fff;
+}
+
+.pm-btn--primary:hover {
+  background: var(--pm-primary-hover);
+}
+
+.pm-btn--primary:active {
+  background: var(--pm-primary-press);
+}
+
+.pm-btn--secondary {
+  background: #fff;
+  border-color: var(--pm-border);
+  color: var(--pm-text);
+}
+
+.pm-btn--secondary:hover {
+  background: rgba(17, 24, 39, 0.03);
+}
+
+.pm-btn--ghost {
+  background: transparent;
+  color: var(--pm-text);
+}
+
+.pm-btn--ghost:hover {
+  background: rgba(17, 24, 39, 0.04);
+}
+
+/* Auth layout */
+.pm-auth-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--pm-space-8) var(--pm-space-4);
+}
+
+.pm-auth-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+.pm-actions {
+  display: flex;
+  gap: var(--pm-space-3);
+  align-items: center;
+}
+
+.pm-actions--right {
+  justify-content: flex-end;
+}
+
+.pm-code-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--pm-space-3);
+  align-items: end;
+}
+
+@media (max-width: 420px) {
+  .pm-code-row {
+    grid-template-columns: 1fr;
+  }
+}
+

@@ -1,18 +1,43 @@
 <template>
-  <div class="login-container">
-    <h1>登录</h1>
-    <form @submit.prevent="onSubmit">
-      <div>
-        <label for="username">用户名</label>
-        <input id="username" v-model="credentials.username" type="text" required />
+  <div class="pm-auth-shell">
+    <div class="pm-card pm-auth-card">
+      <div class="pm-card__header">
+        <h1 class="pm-title">登录</h1>
+        <p class="pm-subtitle">使用你的账号进入项目管理系统</p>
       </div>
-      <div>
-        <label for="password">密码</label>
-        <input id="password" v-model="credentials.password" type="password" required />
+      <div class="pm-card__body">
+        <form class="pm-form" @submit.prevent="onSubmit">
+          <div class="pm-field">
+            <label for="username">用户名</label>
+            <input
+              id="username"
+              v-model="credentials.username"
+              class="pm-input"
+              type="text"
+              autocomplete="username"
+              required
+            />
+          </div>
+          <div class="pm-field">
+            <label for="password">密码</label>
+            <input
+              id="password"
+              v-model="credentials.password"
+              class="pm-input"
+              type="password"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+          <div class="pm-actions pm-actions--right">
+            <button type="button" class="pm-btn pm-btn--secondary" @click="goToRegister">
+              注册
+            </button>
+            <button type="submit" class="pm-btn pm-btn--primary">登录</button>
+          </div>
+        </form>
       </div>
-      <button type="submit">登录</button>
-      <button type="button" @click="goToRegister">注册</button>
-    </form>
+    </div>
   </div>
 </template>
 
@@ -42,27 +67,7 @@ function goToRegister() {
 }
 </script>
 
-<style scoped>
-.login-container {
-  max-width: 400px;
-  margin: 100px auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-.login-container div {
-  margin-bottom: 15px;
-}
-.login-container label {
-  display: block;
-  margin-bottom: 5px;
-}
-.login-container input {
-  width: 100%;
-  padding: 8px;
-  box-sizing: border-box;
-}
-</style>
+<style scoped></style>
 
 
 

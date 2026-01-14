@@ -1,0 +1,54 @@
+@import './tokens.css';
+
+/* 基础 reset + 全局默认排版 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--pm-font-sans);
+  color: var(--pm-text);
+  background: radial-gradient(1200px 800px at 20% 0%, #eef2ff 0%, transparent 55%),
+    radial-gradient(1000px 700px at 100% 20%, #eff6ff 0%, transparent 60%),
+    var(--pm-bg);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  line-height: 1.2;
+}
+
+p {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(37, 99, 235, 0.18);
+}
+

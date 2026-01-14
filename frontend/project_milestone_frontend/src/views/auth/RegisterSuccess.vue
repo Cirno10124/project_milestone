@@ -1,7 +1,21 @@
 <template>
-  <div class="success-container">
-    <h1>注册成功！</h1>
-    <p>5秒后将跳转到登录页面...</p>
+  <div class="pm-auth-shell">
+    <div class="pm-card pm-auth-card">
+      <div class="pm-card__header">
+        <h1 class="pm-title">注册成功</h1>
+        <p class="pm-subtitle">欢迎加入！马上带你进入登录页面</p>
+      </div>
+      <div class="pm-card__body">
+        <div class="pm-stack" style="gap: var(--pm-space-3);">
+          <p class="pm-help">5 秒后将自动跳转到登录页面…</p>
+          <div class="pm-actions pm-actions--right">
+            <button class="pm-btn pm-btn--primary" @click="router.push('/auth/login')">
+              立即登录
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -18,12 +32,4 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
-.success-container {
-  text-align: center;
-  margin-top: 100px;
-}
-.success-container h1 {
-  color: #42b983;
-}
-</style>
+<style scoped></style>
