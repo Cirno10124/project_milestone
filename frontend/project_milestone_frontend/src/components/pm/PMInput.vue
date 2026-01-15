@@ -9,8 +9,10 @@
 
     <component
       :is="as === 'textarea' ? 'textarea' : 'input'"
-      v-bind="restAttrs"
+      v-bind="passThroughAttrs"
       :class="inputClasses"
+      :value="modelValue"
+      @input="onInput"
     />
 
     <p v-if="error" class="mt-1.5 text-sm text-red-600">{{ error }}</p>
@@ -18,24 +20,42 @@
 </template>
 
 <script setup lang="ts">
-import { computed, useAttrs } from 'vue';
+import { computed, useAttrs, useSlots } from 'vue';
 
 type As = 'input' | 'textarea';
 
 interface Props {
   as?: As;
   error?: string;
+  modelValue?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   as: 'input',
   error: '',
+  modelValue: '',
 });
 
-const attrs = useAttrs();
+const emit = defineEmits<{
+  (e: 'update:modelValue', v: string): void;
+}>();
 
-// class 由本组件统一生成；外部 class 允许叠加
-const restAttrs = computed(() => attrs as Record<string, unknown>);
+const attrs = useAttrs();
+const slots = useSlots();
+
+// 透传除 class/value/onInput 外的属性；class 在 inputClasses 里合并；value/onInput 由 v-model 接管
+const passThroughAttrs = computed(() => {
+  const { class: _class, value: _value, onInput: _onInput, ...rest } =
+    attrs as Record<string, unknown>;
+  return rest;
+});
+
+const modelValue = computed(() => props.modelValue);
+
+function onInput(e: Event) {
+  const target = e.target as HTMLInputElement | HTMLTextAreaElement | null;
+  emit('update:modelValue', target?.value ?? '');
+}
 
 const baseStyles =
   'w-full px-3 py-2 border rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed';
@@ -47,7 +67,7 @@ const errorStyles = computed(() =>
 const inputClasses = computed(() => [
   baseStyles,
   errorStyles.value,
-  $slots.icon ? 'pl-10' : '',
+  slots.icon ? 'pl-10' : '',
   (attrs as any)?.class,
 ]);
 </script>
