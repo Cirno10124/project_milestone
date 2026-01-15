@@ -1,21 +1,52 @@
 <template>
-  <div>
-    <h2>选择组织</h2>
-    <p v-if="error" class="error">{{ error }}</p>
+  <div class="min-h-screen">
+    <div class="max-w-4xl mx-auto px-4 py-10">
+      <div class="mb-6">
+        <h2 class="text-2xl font-semibold text-gray-900">选择组织</h2>
+        <p class="text-sm text-gray-500 mt-1">组织用于隔离项目数据与成员权限。</p>
+      </div>
 
-    <div class="create">
-      <input v-model="newOrgName" placeholder="新组织名称" />
-      <button @click="onCreateOrg" :disabled="!newOrgName">创建并进入</button>
+      <p v-if="error" class="text-sm text-red-600 mb-4">{{ error }}</p>
+
+      <PMCard class="mb-6">
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex-1">
+            <PMFormField label="新建组织" required helpText="创建后将自动进入该组织。">
+              <PMInput v-model="newOrgName" placeholder="例如：研发一组 / XX实验室" />
+            </PMFormField>
+          </div>
+          <div class="shrink-0 pt-6">
+            <PMButton variant="primary" type="button" :disabled="!newOrgName" @click="onCreateOrg">
+              创建并进入
+            </PMButton>
+          </div>
+        </div>
+      </PMCard>
+
+      <PMCard>
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900">我加入的组织</h3>
+          <span class="text-sm text-gray-500">{{ orgs.length }} 个</span>
+        </div>
+
+        <div v-if="orgs.length" class="mt-4 divide-y divide-gray-200">
+          <div
+            v-for="o in orgs"
+            :key="o.id"
+            class="py-3 flex items-center justify-between gap-4"
+          >
+            <div class="min-w-0">
+              <div class="font-medium text-gray-900 truncate">{{ o.name }}</div>
+              <div class="text-xs text-gray-500">组织 ID：{{ o.id }}</div>
+            </div>
+            <PMButton variant="secondary" type="button" @click="selectOrg(o.id, o.name)">
+              进入
+            </PMButton>
+          </div>
+        </div>
+        <p v-else class="mt-4 text-sm text-gray-500">暂无组织，请先创建。</p>
+      </PMCard>
     </div>
-
-    <h3>我加入的组织</h3>
-    <ul v-if="orgs.length">
-      <li v-for="o in orgs" :key="o.id">
-        {{ o.name }}
-        <button @click="selectOrg(o.id, o.name)">进入</button>
-      </li>
-    </ul>
-    <p v-else>暂无组织，请先创建。</p>
   </div>
 </template>
 
@@ -24,6 +55,10 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { createOrg, getOrgs } from '@/api/org';
 import { useAuthStore } from '@/store/auth';
+import PMButton from '@/components/pm/PMButton.vue';
+import PMCard from '@/components/pm/PMCard.vue';
+import PMFormField from '@/components/pm/PMFormField.vue';
+import PMInput from '@/components/pm/PMInput.vue';
 
 const orgs = ref<Array<{ id: number; name: string }>>([]);
 const newOrgName = ref('');
@@ -68,15 +103,4 @@ async function onCreateOrg() {
 onMounted(load);
 </script>
 
-<style scoped>
-.error {
-  color: red;
-}
-.create {
-  margin: 12px 0;
-  display: flex;
-  gap: 8px;
-}
-</style>
-
-
+<style scoped></style>

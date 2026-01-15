@@ -1,19 +1,39 @@
 <template>
-  <div class="create-container">
-    <h2>新建项目</h2>
-    <form @submit.prevent="onSubmit">
-      <div>
-        <label for="name">项目名称</label>
-        <input id="name" v-model="form.name" type="text" required />
+  <div class="min-h-screen">
+    <div class="max-w-3xl mx-auto px-4 py-10">
+      <div class="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-semibold text-gray-900">新建项目</h2>
+          <p class="text-sm text-gray-500 mt-1">在当前组织下创建项目。</p>
+        </div>
+        <PMButton variant="ghost" type="button" @click="cancel">返回</PMButton>
       </div>
-      <div>
-        <label for="description">描述</label>
-        <textarea id="description" v-model="form.description"></textarea>
-      </div>
-      <button type="submit">创建</button>
-      <button type="button" @click="cancel">取消</button>
-    </form>
-    <p v-if="error" class="error">{{ error }}</p>
+
+      <PMCard>
+        <form class="space-y-5" @submit.prevent="onSubmit">
+          <PMFormField label="项目名称" required>
+            <PMInput id="name" v-model="form.name" placeholder="例如：2026 春季版本" required />
+          </PMFormField>
+
+          <PMFormField label="描述" helpText="可选，用于说明项目背景与目标。">
+            <PMInput
+              as="textarea"
+              id="description"
+              v-model="form.description"
+              rows="5"
+              placeholder="写点什么…"
+            />
+          </PMFormField>
+
+          <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+
+          <div class="flex items-center justify-end gap-2">
+            <PMButton variant="secondary" type="button" @click="cancel">取消</PMButton>
+            <PMButton variant="primary" type="submit">创建</PMButton>
+          </div>
+        </form>
+      </PMCard>
+    </div>
   </div>
 </template>
 
@@ -22,6 +42,10 @@ import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { createProject } from '@/api/project';
+import PMButton from '@/components/pm/PMButton.vue';
+import PMCard from '@/components/pm/PMCard.vue';
+import PMFormField from '@/components/pm/PMFormField.vue';
+import PMInput from '@/components/pm/PMInput.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -44,29 +68,4 @@ function cancel() {
 }
 </script>
 
-<style scoped>
-.create-container {
-  max-width: 600px;
-  margin: 20px auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-.create-container div {
-  margin-bottom: 15px;
-}
-.create-container label {
-  display: block;
-  margin-bottom: 5px;
-}
-.create-container input,
-.create-container textarea {
-  width: 100%;
-  padding: 8px;
-  box-sizing: border-box;
-}
-.error {
-  color: red;
-  margin-top: 10px;
-}
-</style>
+<style scoped></style>
