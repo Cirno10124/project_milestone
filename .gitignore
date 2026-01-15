@@ -6,6 +6,9 @@ backend/node_modules/
 # 遗留目录：旧前端源码（已废弃，避免误提交/误维护）
 frontend/src/
 
+#外部样式表
+frontend/css_design/
+
 # 输出目录
 dist/
 frontend/dist/

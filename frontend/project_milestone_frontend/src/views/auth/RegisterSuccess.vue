@@ -9,9 +9,9 @@
         <div class="pm-stack" style="gap: var(--pm-space-3);">
           <p class="pm-help">5 秒后将自动跳转到登录页面…</p>
           <div class="pm-actions pm-actions--right">
-            <button class="pm-btn pm-btn--primary" @click="router.push('/auth/login')">
+            <PMButton variant="primary" type="button" @click="router.push('/auth/login')">
               立即登录
-            </button>
+            </PMButton>
           </div>
         </div>
       </div>
@@ -22,6 +22,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import PMButton from '@/components/pm/PMButton.vue';
 
 const router = useRouter();
 

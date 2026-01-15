@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import mermaid from 'mermaid';
+import './styles/tailwind.css';
 import './styles/index.css';
 
 // 全局初始化 Mermaid，用于自动渲染 .mermaid 区块

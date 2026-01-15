@@ -36,14 +36,14 @@
               <label for="code">验证码</label>
               <input id="code" v-model="form.code" class="pm-input" type="text" required />
             </div>
-            <button
+            <PMButton
+              variant="secondary"
               type="button"
-              class="pm-btn pm-btn--secondary"
               :disabled="sendingCode || cooldownLeft > 0"
               @click="onSendCode"
             >
               {{ cooldownLeft > 0 ? `重新发送(${cooldownLeft}s)` : '发送验证码' }}
-            </button>
+            </PMButton>
           </div>
 
           <div class="pm-field">
@@ -72,10 +72,8 @@
           <p v-if="error" class="pm-error">{{ error }}</p>
 
           <div class="pm-actions pm-actions--right">
-            <button type="button" class="pm-btn pm-btn--secondary" @click="goToLogin">
-              返回登录
-            </button>
-            <button type="submit" class="pm-btn pm-btn--primary">注册</button>
+            <PMButton variant="secondary" type="button" @click="goToLogin">返回登录</PMButton>
+            <PMButton variant="primary" type="submit">注册</PMButton>
           </div>
         </form>
       </div>
@@ -88,6 +86,7 @@ import { reactive, ref, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { sendEmailCode } from '@/api/auth';
+import PMButton from '@/components/pm/PMButton.vue';
 import { defineOptions } from 'vue';
 defineOptions({ name: 'RegisterPage' });
 

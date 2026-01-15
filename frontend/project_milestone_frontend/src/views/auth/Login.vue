@@ -30,10 +30,8 @@
             />
           </div>
           <div class="pm-actions pm-actions--right">
-            <button type="button" class="pm-btn pm-btn--secondary" @click="goToRegister">
-              注册
-            </button>
-            <button type="submit" class="pm-btn pm-btn--primary">登录</button>
+            <PMButton variant="secondary" type="button" @click="goToRegister">注册</PMButton>
+            <PMButton variant="primary" type="submit">登录</PMButton>
           </div>
         </form>
       </div>
@@ -45,6 +43,7 @@
 import { reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
+import PMButton from '@/components/pm/PMButton.vue';
 // 指定组件名，解决单词组件命名规则
 import { defineOptions } from 'vue';
 defineOptions({ name: 'LoginPage' });
