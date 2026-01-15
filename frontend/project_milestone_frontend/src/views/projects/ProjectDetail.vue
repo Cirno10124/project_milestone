@@ -1,171 +1,288 @@
 <template>
-  <div>
-    <h2>项目详情 - {{ project.name }}</h2>
-    <div style="margin: 8px 0;">
-      <router-link :to="`/projects/${projectId}/members`">项目成员管理</router-link>
-    </div>
-    <p>{{ project.description }}</p>
+  <div class="min-h-screen">
+    <div class="max-w-6xl mx-auto px-4 py-10">
+      <div class="flex items-start justify-between gap-4 mb-6">
+        <div class="min-w-0">
+          <h2 class="text-2xl font-semibold text-gray-900 truncate">
+            项目详情 · {{ project.name || `#${projectId}` }}
+          </h2>
+          <p class="text-sm text-gray-500 mt-1">
+            {{ project.description || '暂无描述' }}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <PMButton variant="secondary" type="button" @click="goToMembers">
+            成员管理
+          </PMButton>
+        </div>
+      </div>
 
     <!-- Git 联动配置（仅管理员可见） -->
-    <div v-if="isAdmin" class="git-integration">
-      <h3>Git 联动</h3>
-      <p class="hint">将项目绑定到内网 Git 仓库，并在 push 时根据 commit message 自动更新任务进度。</p>
+      <PMCard v-if="isAdmin" class="mb-6">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">Git 联动</h3>
+            <p class="text-sm text-gray-500 mt-1">
+              将项目绑定到 Git 仓库，并在 push 时根据 commit message 自动更新任务进度。
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <PMButton variant="primary" type="button" :disabled="repoSaving" @click="saveRepo">
+              {{ repoSaving ? '保存中...' : '保存配置' }}
+            </PMButton>
+            <PMButton variant="secondary" type="button" :disabled="repoSaving" @click="rotateRepoToken">
+              轮换 Token
+            </PMButton>
+            <PMButton variant="ghost" type="button" :disabled="repoSaving" @click="reloadRepo">
+              刷新
+            </PMButton>
+          </div>
+        </div>
 
-      <div class="git-form">
-        <div>
-          <label>仓库地址（URL）</label>
-          <input v-model="repoForm.repoUrl" placeholder="例如：http://git.xxx.local/group/repo.git" />
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <PMFormField label="仓库地址（URL）" required>
+            <PMInput v-model="repoForm.repoUrl" placeholder="例如：http://git.xxx.local/group/repo.git" />
+          </PMFormField>
+
+          <PMFormField label="Git 服务" required>
+            <select
+              v-model="repoForm.repoProvider"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="gitlab">GitLab</option>
+              <option value="gitea">Gitea</option>
+              <option value="generic">Generic</option>
+            </select>
+          </PMFormField>
+
+          <PMFormField label="默认分支">
+            <PMInput v-model="repoForm.repoDefaultBranch" placeholder="main / master" />
+          </PMFormField>
         </div>
-        <div>
-          <label>Git 服务</label>
-          <select v-model="repoForm.repoProvider">
-            <option value="gitlab">GitLab</option>
-            <option value="gitea">Gitea</option>
-            <option value="generic">Generic</option>
-          </select>
-        </div>
-        <div>
-          <label>默认分支</label>
-          <input v-model="repoForm.repoDefaultBranch" placeholder="main / master" />
-        </div>
-        <div style="margin-top: 6px;">
-          <label style="display:flex; align-items:center; gap: 8px;">
-            <input type="checkbox" v-model="repoForm.gitSyncEnabled" />
+
+        <div class="mt-4">
+          <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              v-model="repoForm.gitSyncEnabled"
+              class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
             启用“commit 自动更新任务进度”
           </label>
         </div>
 
-        <div style="display:flex; gap: 8px; margin-top: 8px;">
-          <button @click="saveRepo" :disabled="repoSaving">{{ repoSaving ? '保存中...' : '保存配置' }}</button>
-          <button @click="rotateRepoToken" :disabled="repoSaving">轮换 Token</button>
-          <button @click="reloadRepo" :disabled="repoSaving">刷新</button>
+        <p v-if="repoError" class="text-sm text-red-600 mt-3">{{ repoError }}</p>
+
+        <div v-if="repoInfo.webhookPath" class="mt-6">
+          <h4 class="text-sm font-semibold text-gray-900">Webhook 配置</h4>
+          <div class="mt-2 space-y-2">
+            <div class="mono">Webhook URL：{{ apiBaseUrl }}{{ repoInfo.webhookPath }}</div>
+            <div class="mono">Header：X-Project-Webhook-Token: {{ repoInfo.webhookToken }}</div>
+            <div v-if="repoInfo.lastGitEventAt" class="hint">
+              最后一次收到 Git 事件：{{ formatBeijingDateTime(repoInfo.lastGitEventAt) }}
+            </div>
+          </div>
+
+          <h4 class="text-sm font-semibold text-gray-900 mt-4">Commit message 规则（示例）</h4>
+          <div class="mt-2 space-y-2">
+            <div class="mono">#task:12 progress:30%</div>
+            <div class="mono">task#12 进度:80%</div>
+            <div class="mono">#task:12 done</div>
+          </div>
         </div>
-
-        <p v-if="repoError" class="error">{{ repoError }}</p>
-      </div>
-
-      <div v-if="repoInfo.webhookPath" class="git-webhook">
-        <h4>Webhook 配置</h4>
-        <div class="mono">Webhook URL：{{ apiBaseUrl }}{{ repoInfo.webhookPath }}</div>
-        <div class="mono">Header：X-Project-Webhook-Token: {{ repoInfo.webhookToken }}</div>
-        <div v-if="repoInfo.lastGitEventAt" class="hint">最后一次收到 Git 事件：{{ formatBeijingDateTime(repoInfo.lastGitEventAt) }}</div>
-
-        <h4 style="margin-top: 10px;">Commit message 规则（示例）</h4>
-        <div class="mono">#task:12 progress:30%</div>
-        <div class="mono">task#12 进度:80%</div>
-        <div class="mono">#task:12 done</div>
-      </div>
-    </div>
+      </PMCard>
     
     <!-- 项目开始日期设置 -->
-    <div v-if="isAdmin" class="project-date-form">
-      <label>项目开始日期（必选）</label>
-      <input type="date" v-model="projectStartDate" required />
-      <button @click="calculateDates" :disabled="!projectStartDate">计算日期</button>
-      <p v-if="projectEndDate" class="date-result">
-        项目预计完成时间：{{ projectEndDate }}
-      </p>
-    </div>
+      <PMCard v-if="isAdmin" class="mb-6">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">项目日期</h3>
+            <p class="text-sm text-gray-500 mt-1">设置开始日期后，可计算关键路径与甘特图。</p>
+          </div>
+          <PMButton variant="primary" type="button" :disabled="!projectStartDate" @click="calculateDates">
+            计算日期
+          </PMButton>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 items-end">
+          <PMFormField label="项目开始日期（必选）" required>
+            <input
+              type="date"
+              v-model="projectStartDate"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </PMFormField>
+
+          <div v-if="projectEndDate" class="text-sm">
+            <div class="text-gray-500">项目预计完成时间</div>
+            <div class="font-semibold text-gray-900 mt-1">{{ projectEndDate }}</div>
+          </div>
+        </div>
+      </PMCard>
     
     <!-- 甘特图导出和预览 -->
-    <div v-if="isAdmin" class="gantt-actions">
-      <button @click="previewGantt">预览甘特图</button>
-      <button @click="exportGanttChart">导出甘特图（PNG）</button>
-      <button @click="exportGanttSvg">导出甘特图（SVG）</button>
-      <button @click="exportGanttTableExcel">导出甘特表（Excel）</button>
-    </div>
+      <PMCard v-if="isAdmin" class="mb-6">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">甘特图</h3>
+            <p class="text-sm text-gray-500 mt-1">预览与导出项目排期。</p>
+          </div>
+          <div class="flex flex-wrap gap-2 justify-end">
+            <PMButton variant="primary" type="button" @click="previewGantt">预览甘特图</PMButton>
+            <PMButton variant="secondary" type="button" @click="exportGanttChart">导出 PNG</PMButton>
+            <PMButton variant="secondary" type="button" @click="exportGanttSvg">导出 SVG</PMButton>
+            <PMButton variant="secondary" type="button" @click="exportGanttTableExcel">导出 Excel</PMButton>
+          </div>
+        </div>
+      </PMCard>
     
-    <button v-if="isAdmin" @click="showForm = !showForm">添加 WBS 节点</button>
-
     <!-- WBS 列表 -->
-    <h3>WBS 节点</h3>
-    <ul>
-      <li v-for="item in wbsItems" :key="item.id">
-        {{ item.name }}
-        <input type="number" v-model.number="item.seq" @change="updateWbsSeq(item)" style="width:60px; margin: 0 8px;" />
-        (持续 {{ item.duration }} 天)
-        <span v-if="wbsStartDates[item.id]" class="wbs-date">
-          最早开始：{{ wbsStartDates[item.id] }}
-        </span>
-      </li>
-      <li v-if="wbsItems.length === 0">暂无 WBS 节点</li>
-    </ul>
+      <PMCard class="mb-6">
+        <div class="flex items-center justify-between gap-4">
+          <h3 class="text-lg font-semibold text-gray-900">WBS 节点</h3>
+          <PMButton v-if="isAdmin" variant="primary" type="button" @click="showForm = !showForm">
+            {{ showForm ? '收起表单' : '添加 WBS 节点' }}
+          </PMButton>
+        </div>
+
+        <div class="mt-4 space-y-2">
+          <div
+            v-for="item in wbsItems"
+            :key="item.id"
+            class="p-3 rounded-lg border border-gray-200 flex flex-col md:flex-row md:items-center gap-3"
+          >
+            <div class="min-w-0 flex-1">
+              <div class="font-medium text-gray-900 truncate">{{ item.name }}</div>
+              <div class="text-xs text-gray-500 mt-1">
+                持续 {{ item.duration }} 天
+                <span v-if="wbsStartDates[item.id]" class="ml-2">· 最早开始：{{ wbsStartDates[item.id] }}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-500">顺序</span>
+              <input
+                type="number"
+                v-model.number="item.seq"
+                @change="updateWbsSeq(item)"
+                class="w-20 px-3 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+          <div v-if="wbsItems.length === 0" class="text-sm text-gray-500">暂无 WBS 节点</div>
+        </div>
 
     <!-- 添加表单 -->
-    <div v-if="showForm" class="wbs-form">
-      <h4>新建 WBS 节点</h4>
-      <form @submit.prevent="submitWbs">
-        <div>
-          <label>名称</label>
-          <input v-model="newItem.name" required />
+        <div v-if="showForm" class="mt-6 border-t border-gray-200 pt-6">
+          <h4 class="text-sm font-semibold text-gray-900">新建 WBS 节点</h4>
+          <form class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end" @submit.prevent="submitWbs">
+            <PMFormField label="名称" required>
+              <PMInput v-model="newItem.name" required />
+            </PMFormField>
+            <PMFormField label="持续天数" required>
+              <input
+                type="number"
+                v-model.number="newItem.duration"
+                min="1"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </PMFormField>
+            <PMFormField label="描述">
+              <PMInput v-model="newItem.description" />
+            </PMFormField>
+            <div class="md:col-span-3 flex justify-end">
+              <PMButton variant="primary" type="submit">提交</PMButton>
+            </div>
+          </form>
+          <p v-if="wbsError" class="text-sm text-red-600 mt-3">{{ wbsError }}</p>
         </div>
-        <div>
-          <label>持续天数</label>
-          <input v-model.number="newItem.duration" type="number" min="1" required />
-        </div>
-        <div>
-          <label>描述</label>
-          <input v-model="newItem.description" />
-        </div>
-        <button type="submit">提交</button>
-      </form>
-      <p v-if="wbsError" class="error">{{ wbsError }}</p>
-    </div>
+      </PMCard>
 
-    <!-- 新建任务按钮/表单 -->
-    <button v-if="isAdmin" @click="showTaskForm = !showTaskForm" style="margin-top: 20px;">新建任务</button>
-    <div v-if="showTaskForm" class="task-form">
-      <h4>新建任务</h4>
-      <form @submit.prevent="submitTask">
-        <div>
-          <label>选择 WBS 节点</label>
-          <select v-model.number="newTask.wbsItemId">
-            <option v-for="item in wbsItems" :key="item.id" :value="item.id">{{ item.name }}</option>
-          </select>
-        </div>
-        <div>
-          <label>任务名称</label>
-          <input v-model="newTask.name" required />
-        </div>
-        <div>
-          <label>预计时长(天)</label>
-          <input type="number" v-model.number="newTask.duration" min="1" required />
-        </div>
-        <button type="submit">创建</button>
-      </form>
-      <p v-if="taskError" class="error">{{ taskError }}</p>
-    </div>
-
-    <!-- 添加任务依赖 -->
-    <div v-if="isAdmin" class="dependency-form">
-      <h4>添加任务后继</h4>
-      <div>
-        <label>基准任务</label>
-        <select v-model.number="baseTaskId">
-          <option disabled value="0">选择任务</option>
-          <option v-for="t in tasks" :key="t.id" :value="t.id">#{{ t.id }} {{ t.name }}</option>
-        </select>
+    <!-- 新建任务 -->
+    <PMCard class="mb-6">
+      <div class="flex items-center justify-between gap-4">
+        <h3 class="text-lg font-semibold text-gray-900">任务</h3>
+        <PMButton v-if="isAdmin" variant="primary" type="button" @click="showTaskForm = !showTaskForm">
+          {{ showTaskForm ? '收起表单' : '新建任务' }}
+        </PMButton>
       </div>
-      <div v-if="baseTaskId">
-        <label>选择后继任务（多选）</label>
-        <select v-model="succIds" multiple size="4">
-          <option v-for="t in allowedSuccessors" :key="t.id" :value="t.id">#{{ t.id }} {{ t.name }}</option>
-        </select>
-      </div>
-      <button @click="submitDependency">创建后继依赖</button>
-      <p v-if="depError" class="error">{{ depError }}</p>
-    </div>
 
-    <!-- 任务列表 -->
-    <h3>任务列表</h3>
-    <div class="schedule-actions" v-if="isAdmin">
-      <button @click="runCriticalPathAnalysis" :disabled="scheduleLoading">
-        {{ scheduleLoading ? '关键路径分析中...' : '运行关键路径分析' }}
-      </button>
-      <span v-if="scheduleSummary" class="schedule-summary">{{ scheduleSummary }}</span>
-    </div>
-    <p v-if="scheduleError" class="error">{{ scheduleError }}</p>
-    <table v-if="tasks.length > 0" class="task-table">
+      <div v-if="showTaskForm" class="mt-6 border-t border-gray-200 pt-6">
+        <h4 class="text-sm font-semibold text-gray-900">新建任务</h4>
+        <form class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end" @submit.prevent="submitTask">
+          <PMFormField label="选择 WBS 节点" required>
+            <select
+              v-model.number="newTask.wbsItemId"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option v-for="item in wbsItems" :key="item.id" :value="item.id">{{ item.name }}</option>
+            </select>
+          </PMFormField>
+          <PMFormField label="任务名称" required>
+            <PMInput v-model="newTask.name" required />
+          </PMFormField>
+          <PMFormField label="预计时长(天)" required>
+            <input
+              type="number"
+              v-model.number="newTask.duration"
+              min="1"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </PMFormField>
+          <div class="md:col-span-3 flex justify-end">
+            <PMButton variant="primary" type="submit">创建</PMButton>
+          </div>
+        </form>
+        <p v-if="taskError" class="text-sm text-red-600 mt-3">{{ taskError }}</p>
+      </div>
+
+      <!-- 添加任务依赖（后继） -->
+      <div v-if="isAdmin" class="mt-6 border-t border-gray-200 pt-6">
+        <h4 class="text-sm font-semibold text-gray-900">添加任务后继</h4>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <PMFormField label="基准任务" required>
+            <select
+              v-model.number="baseTaskId"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option disabled value="0">选择任务</option>
+              <option v-for="t in tasks" :key="t.id" :value="t.id">#{{ t.id }} {{ t.name }}</option>
+            </select>
+          </PMFormField>
+          <PMFormField v-if="baseTaskId" label="选择后继任务（多选）" required class="md:col-span-2">
+            <select
+              v-model="succIds"
+              multiple
+              size="4"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option v-for="t in allowedSuccessors" :key="t.id" :value="t.id">#{{ t.id }} {{ t.name }}</option>
+            </select>
+          </PMFormField>
+          <div class="md:col-span-3 flex items-center justify-between gap-3">
+            <p v-if="depError" class="text-sm text-red-600">{{ depError }}</p>
+            <PMButton variant="primary" type="button" @click="submitDependency">创建后继依赖</PMButton>
+          </div>
+        </div>
+      </div>
+
+      <!-- 任务列表 -->
+      <div class="mt-6 border-t border-gray-200 pt-6">
+        <div class="flex items-center justify-between gap-4">
+          <h4 class="text-sm font-semibold text-gray-900">任务列表</h4>
+          <div class="flex items-center gap-3" v-if="isAdmin">
+            <PMButton variant="secondary" type="button" :disabled="scheduleLoading" @click="runCriticalPathAnalysis">
+              {{ scheduleLoading ? '关键路径分析中...' : '运行关键路径分析' }}
+            </PMButton>
+            <span v-if="scheduleSummary" class="text-sm text-gray-500">{{ scheduleSummary }}</span>
+          </div>
+        </div>
+        <p v-if="scheduleError" class="text-sm text-red-600 mt-3">{{ scheduleError }}</p>
+
+        <div class="mt-4 overflow-x-auto">
+          <table v-if="tasks.length > 0" class="task-table">
       <thead>
         <tr>
           <th>名称</th>
@@ -191,7 +308,9 @@
           <td>
             <span v-if="getAssigneeNames(t).length">{{ getAssigneeNames(t).join(', ') }}</span>
             <span v-else>-</span>
-            <button v-if="isAdmin" style="margin-left: 8px;" @click="openAssign(t)">转派</button>
+            <PMButton v-if="isAdmin" variant="ghost" type="button" class="ml-2" @click="openAssign(t)">
+              转派
+            </PMButton>
           </td>
           <td>{{ t.duration ?? '-' }} 天</td>
           <td>
@@ -218,27 +337,38 @@
           <td>{{ getScheduleField(t.id, 'lateFinish') }}</td>
           <td>{{ getScheduleSlack(t.id) }}</td>
           <td>
-            <input type="number" v-model.number="t.percentComplete" @change="updateTaskStatus(t)" min="0" max="100" />%
+            <div class="flex items-center gap-2">
+              <input
+                type="number"
+                v-model.number="t.percentComplete"
+                @change="updateTaskStatus(t)"
+                min="0"
+                max="100"
+                class="w-20 px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <span class="text-sm text-gray-500">%</span>
+            </div>
           </td>
           <td>
-            <button @click="updateTaskStatus(t)">更新</button>
+            <PMButton variant="secondary" type="button" @click="updateTaskStatus(t)">更新</PMButton>
           </td>
         </tr>
       </tbody>
-    </table>
-    <p v-else class="no-task">暂无任务</p>
-
-    <p v-if="taskError" class="error">{{ taskError }}</p>
+          </table>
+          <div v-else class="text-sm text-gray-500">暂无任务</div>
+        </div>
+      </div>
+    </PMCard>
 
     <!-- Mermaid 渲染容器 -->
-    <div style="margin-top: 16px; display: flex; align-items: center; gap: 10px;">
-      <h3 style="margin: 0;">流程图</h3>
-      <label style="display:flex; align-items:center; gap: 6px;">
+    <div class="mt-6 flex items-center gap-3">
+      <h3 class="text-lg font-semibold text-gray-900">流程图</h3>
+      <label class="inline-flex items-center gap-2 text-sm text-gray-700">
         <input type="checkbox" v-model="showFlowchart" />
         显示
       </label>
     </div>
-    <div v-show="showFlowchart" id="wbs-graph" style="margin-top:12px;"></div>
+    <div v-show="showFlowchart" id="wbs-graph" class="mt-3"></div>
 
     <!-- 转派处理人模态框（MVP：从项目成员中多选） -->
     <div v-if="showAssignModal" class="modal-overlay" @click="closeAssign">
@@ -252,14 +382,21 @@
           <div v-if="projectMembers.length === 0">项目暂无成员，请先在“项目成员管理”里添加。</div>
           <div v-else>
             <label>选择处理人（可多选）</label>
-            <select v-model="selectedAssigneeIds" multiple size="6" style="width: 100%; margin-top: 8px;">
+            <select
+              v-model="selectedAssigneeIds"
+              multiple
+              size="6"
+              class="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
               <option v-for="m in projectMembers" :key="m.id" :value="m.id">
                 {{ m.username }} (id={{ m.id }})
               </option>
             </select>
-            <div style="margin-top: 12px; display:flex; gap: 8px;">
-              <button @click="submitAssignees" :disabled="!assignTask">保存</button>
-              <button @click="closeAssign">取消</button>
+            <div class="mt-3 flex gap-2 justify-end">
+              <PMButton variant="secondary" type="button" @click="closeAssign">取消</PMButton>
+              <PMButton variant="primary" type="button" :disabled="!assignTask" @click="submitAssignees">
+                保存
+              </PMButton>
             </div>
           </div>
         </div>
@@ -278,20 +415,21 @@
           <div v-else-if="ganttError" class="error">{{ ganttError }}</div>
           <div v-else class="gantt-preview">
             <div class="gantt-toolbar">
-              <button @click="exportGanttChart">下载 PNG</button>
-              <button @click="exportGanttSvg">下载 SVG</button>
+              <PMButton variant="secondary" type="button" @click="exportGanttChart">下载 PNG</PMButton>
+              <PMButton variant="secondary" type="button" @click="exportGanttSvg">下载 SVG</PMButton>
             </div>
             <div ref="ganttChartRef" class="gantt-chart"></div>
           </div>
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { getProject, updateProjectStartDate, exportGantt, getGanttData, getProjectRepo, updateProjectRepo } from '@/api/project';
 import { getWbsItems, createWbsItem, updateWbsItem } from '@/api/wbs-item';
 import type { WbsItemDto } from '@/api/wbs-item';
@@ -305,6 +443,10 @@ import mermaid from 'mermaid';
 import { createDependency } from '@/api/dependency';
 import { computeSchedule } from '@/api/schedule';
 import { formatBeijingDateTime } from '@/utils/datetime';
+import PMButton from '@/components/pm/PMButton.vue';
+import PMCard from '@/components/pm/PMCard.vue';
+import PMFormField from '@/components/pm/PMFormField.vue';
+import PMInput from '@/components/pm/PMInput.vue';
 
 interface ProjectDetail {
   id: number;
@@ -315,11 +457,16 @@ interface ProjectDetail {
 }
 
 const route = useRoute();
+const router = useRouter();
 const projectId = computed(() => Number(route.params.id));
 const project = ref<ProjectDetail>({ id: 0, name: '', description: '' });
 const error = ref<string>('');
 
 const isAdmin = computed(() => project.value.role === 'admin');
+
+function goToMembers() {
+  router.push(`/projects/${projectId.value}/members`);
+}
 
 // Git repo binding
 const apiBaseUrl =
