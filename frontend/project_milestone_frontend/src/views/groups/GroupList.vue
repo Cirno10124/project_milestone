@@ -23,6 +23,32 @@
         </div>
       </PMCard>
 
+      <PMCard class="mb-6">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900">组织成员管理</h3>
+          <span class="text-sm text-gray-500">{{ orgUsers.length }} 人</span>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+          <PMFormField label="按用户名邀请" required helpText="组织管理员可添加用户到当前组织。">
+            <PMInput v-model="inviteUsername" placeholder="输入用户名" />
+          </PMFormField>
+          <div class="flex justify-end md:col-span-2">
+            <PMButton variant="primary" type="button" :disabled="!inviteUsername" @click="invite">
+              加入组织
+            </PMButton>
+          </div>
+        </div>
+
+        <p v-if="orgUsers.length === 0" class="mt-4 text-sm text-gray-500">当前组织暂无成员。</p>
+        <div v-else class="mt-4 text-sm text-gray-600">
+          当前成员：
+          <span v-for="(u, idx) in orgUsers" :key="u.id">
+            {{ u.username }}<span v-if="idx < orgUsers.length - 1">、</span>
+          </span>
+        </div>
+      </PMCard>
+
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <PMCard>
           <div class="flex items-center justify-between">
@@ -133,7 +159,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { createGroup, getGroups, addGroupMember, removeGroupMember } from '@/api/group';
-import { getOrgUsers } from '@/api/org';
+import { addOrgUser, getOrgUsers } from '@/api/org';
 import PMAlert from '@/components/pm/PMAlert.vue';
 import PMButton from '@/components/pm/PMButton.vue';
 import PMCard from '@/components/pm/PMCard.vue';
@@ -148,6 +174,7 @@ const selectedGroupId = ref<number>(0);
 const selectedUserId = ref<number>(0);
 const selectedRole = ref<'admin' | 'member'>('member');
 const newName = ref('');
+const inviteUsername = ref('');
 const error = ref('');
 
 async function loadGroups() {
@@ -167,6 +194,19 @@ async function loadOrgUsers() {
     orgUsers.value = (res.data || []).map((u) => ({ id: u.id, username: u.username }));
   } catch (e) {
     console.error('加载组织用户失败', e);
+  }
+}
+
+async function invite() {
+  const username = inviteUsername.value.trim();
+  if (!username) return;
+  try {
+    await addOrgUser({ username });
+    inviteUsername.value = '';
+    await loadOrgUsers();
+  } catch (e) {
+    console.error('加入组织失败', e);
+    error.value = '加入组织失败（需要组织管理员权限）';
   }
 }
 

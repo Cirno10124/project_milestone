@@ -18,6 +18,10 @@ export function getOrgUsers() {
   return http.get<Array<{ id: number; username: string; roleInOrg: string; groupId: number | null; roleInGroup: string }>>('/orgs/users');
 }
 
+export function addOrgUser(dto: { username: string }) {
+  return http.post<{ ok: true }>('/orgs/users', dto);
+}
+
 // 当前选中组织（依赖 X-Org-Id）
 export function getCurrentOrg() {
   return http.get<OrgDto>('/orgs/current');
