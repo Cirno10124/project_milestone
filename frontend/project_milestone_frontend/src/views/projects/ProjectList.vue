@@ -10,6 +10,7 @@
           </p>
         </div>
         <div class="flex items-center gap-2">
+          <PMButton variant="secondary" type="button" @click="toOrgMembers">组织人员管理</PMButton>
           <PMButton variant="secondary" type="button" @click="backToOrgSelect">切换组织</PMButton>
           <PMButton variant="ghost" type="button" @click="logout">退出登录</PMButton>
         </div>
@@ -81,6 +82,10 @@ onMounted(async () => {
 
 function toCreate() {
   router.push('/projects/create'); // 假设有创建页面
+}
+
+function toOrgMembers() {
+  router.push('/groups');
 }
 
 function backToOrgSelect() {
