@@ -71,7 +71,7 @@
           </label>
         </div>
 
-        <p v-if="repoError" class="text-sm text-red-600 mt-3">{{ repoError }}</p>
+        <PMAlert v-if="repoError" type="error" :message="repoError" class="mt-3" />
 
         <div v-if="repoInfo.webhookPath" class="mt-6">
           <h4 class="text-sm font-semibold text-gray-900">Webhook 配置</h4>
@@ -195,7 +195,7 @@
               <PMButton variant="primary" type="submit">提交</PMButton>
             </div>
           </form>
-          <p v-if="wbsError" class="text-sm text-red-600 mt-3">{{ wbsError }}</p>
+          <PMAlert v-if="wbsError" type="error" :message="wbsError" class="mt-3" />
         </div>
       </PMCard>
 
@@ -235,7 +235,7 @@
             <PMButton variant="primary" type="submit">创建</PMButton>
           </div>
         </form>
-        <p v-if="taskError" class="text-sm text-red-600 mt-3">{{ taskError }}</p>
+        <PMAlert v-if="taskError" type="error" :message="taskError" class="mt-3" />
       </div>
 
       <!-- 添加任务依赖（后继） -->
@@ -262,7 +262,7 @@
             </select>
           </PMFormField>
           <div class="md:col-span-3 flex items-center justify-between gap-3">
-            <p v-if="depError" class="text-sm text-red-600">{{ depError }}</p>
+            <PMAlert v-if="depError" type="error" :message="depError" class="flex-1" />
             <PMButton variant="primary" type="button" @click="submitDependency">创建后继依赖</PMButton>
           </div>
         </div>
@@ -279,30 +279,38 @@
             <span v-if="scheduleSummary" class="text-sm text-gray-500">{{ scheduleSummary }}</span>
           </div>
         </div>
-        <p v-if="scheduleError" class="text-sm text-red-600 mt-3">{{ scheduleError }}</p>
+        <PMAlert v-if="scheduleError" type="error" :message="scheduleError" class="mt-3" />
 
         <div class="mt-4 overflow-x-auto">
-          <table v-if="tasks.length > 0" class="task-table">
-      <thead>
-        <tr>
-          <th>名称</th>
-          <th>处理人</th>
-          <th>预计时长</th>
-          <th>前置任务</th>
-          <th>后续任务</th>
-          <th>ES</th>
-          <th>EF</th>
-          <th>LS</th>
-          <th>LF</th>
-          <th>时差(slack)</th>
-          <th>完成情况</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="t in tasks" :key="t.id" :class="{ critical: criticalTaskIds?.has(t.id) }">
+          <table
+            v-if="tasks.length > 0"
+            class="w-full border-collapse"
+          >
+            <thead>
+              <tr class="bg-gray-50 border-b border-gray-200">
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">名称</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">处理人</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">预计时长</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">前置任务</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">后续任务</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ES</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">EF</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">LS</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">LF</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">时差</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">完成情况</th>
+                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">操作</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr
+                v-for="t in tasks"
+                :key="t.id"
+                class="hover:bg-gray-50 transition-colors duration-150"
+                :class="criticalTaskIds?.has(t.id) ? 'bg-red-50' : ''"
+              >
           <td>
-            <span v-if="criticalTaskIds?.has(t.id)" class="critical-badge">关键</span>
+            <PMTag v-if="criticalTaskIds?.has(t.id)" color="red" class="mr-2">关键</PMTag>
             #{{ t.id }} {{ t.name }}
           </td>
           <td>
@@ -312,8 +320,8 @@
               转派
             </PMButton>
           </td>
-          <td>{{ t.duration ?? '-' }} 天</td>
-          <td>
+          <td class="px-4 py-3 text-sm text-gray-700">{{ t.duration ?? '-' }} 天</td>
+          <td class="px-4 py-3 text-sm text-gray-700">
             <span v-if="t.predecessors?.length">
               {{ t.predecessors
                 .map(dep => dep.predecessor?.name)
@@ -322,7 +330,7 @@
             </span>
             <span v-else>-</span>
           </td>
-          <td>
+          <td class="px-4 py-3 text-sm text-gray-700">
             <span v-if="t.successors?.length">
               {{ t.successors
                 .map(dep => dep.task?.name)
@@ -331,12 +339,12 @@
             </span>
             <span v-else>-</span>
           </td>
-          <td>{{ getScheduleField(t.id, 'earlyStart') }}</td>
-          <td>{{ getScheduleField(t.id, 'earlyFinish') }}</td>
-          <td>{{ getScheduleField(t.id, 'lateStart') }}</td>
-          <td>{{ getScheduleField(t.id, 'lateFinish') }}</td>
-          <td>{{ getScheduleSlack(t.id) }}</td>
-          <td>
+          <td class="px-4 py-3 text-sm text-gray-700">{{ getScheduleField(t.id, 'earlyStart') }}</td>
+          <td class="px-4 py-3 text-sm text-gray-700">{{ getScheduleField(t.id, 'earlyFinish') }}</td>
+          <td class="px-4 py-3 text-sm text-gray-700">{{ getScheduleField(t.id, 'lateStart') }}</td>
+          <td class="px-4 py-3 text-sm text-gray-700">{{ getScheduleField(t.id, 'lateFinish') }}</td>
+          <td class="px-4 py-3 text-sm text-gray-700">{{ getScheduleSlack(t.id) }}</td>
+          <td class="px-4 py-3 text-sm text-gray-700">
             <div class="flex items-center gap-2">
               <input
                 type="number"
@@ -349,11 +357,11 @@
               <span class="text-sm text-gray-500">%</span>
             </div>
           </td>
-          <td>
+          <td class="px-4 py-3 text-sm">
             <PMButton variant="secondary" type="button" @click="updateTaskStatus(t)">更新</PMButton>
           </td>
-        </tr>
-      </tbody>
+              </tr>
+            </tbody>
           </table>
           <div v-else class="text-sm text-gray-500">暂无任务</div>
         </div>
@@ -371,58 +379,59 @@
     <div v-show="showFlowchart" id="wbs-graph" class="mt-3"></div>
 
     <!-- 转派处理人模态框（MVP：从项目成员中多选） -->
-    <div v-if="showAssignModal" class="modal-overlay" @click="closeAssign">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>转派处理人 - {{ assignTask?.name }}</h3>
-          <button @click="closeAssign" class="close-btn">×</button>
-        </div>
-        <div class="modal-body">
-          <p v-if="assignError" class="error">{{ assignError }}</p>
-          <div v-if="projectMembers.length === 0">项目暂无成员，请先在“项目成员管理”里添加。</div>
-          <div v-else>
-            <label>选择处理人（可多选）</label>
-            <select
-              v-model="selectedAssigneeIds"
-              multiple
-              size="6"
-              class="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option v-for="m in projectMembers" :key="m.id" :value="m.id">
-                {{ m.username }} (id={{ m.id }})
-              </option>
-            </select>
-            <div class="mt-3 flex gap-2 justify-end">
-              <PMButton variant="secondary" type="button" @click="closeAssign">取消</PMButton>
-              <PMButton variant="primary" type="button" :disabled="!assignTask" @click="submitAssignees">
-                保存
-              </PMButton>
-            </div>
-          </div>
-        </div>
+    <PMModal
+      :open="showAssignModal"
+      size="lg"
+      :title="`转派处理人 - ${assignTask?.name ?? ''}`"
+      @update:open="(v) => (showAssignModal = v)"
+      @close="closeAssign"
+    >
+      <PMAlert v-if="assignError" type="error" :message="assignError" class="mb-3" />
+      <div v-if="projectMembers.length === 0" class="text-sm text-gray-600">
+        项目暂无成员，请先在“项目成员管理”里添加。
       </div>
-    </div>
+      <div v-else>
+        <PMFormField label="选择处理人（可多选）" required>
+          <select
+            v-model="selectedAssigneeIds"
+            multiple
+            size="6"
+            class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option v-for="m in projectMembers" :key="m.id" :value="m.id">
+              {{ m.username }} (id={{ m.id }})
+            </option>
+          </select>
+        </PMFormField>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <PMButton variant="secondary" type="button" @click="closeAssign">取消</PMButton>
+          <PMButton variant="primary" type="button" :disabled="!assignTask" @click="submitAssignees">
+            保存
+          </PMButton>
+        </div>
+      </template>
+    </PMModal>
     
     <!-- 甘特图预览模态框 -->
-    <div v-if="showGanttPreview" class="modal-overlay" @click="showGanttPreview = false">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>甘特图预览</h3>
-          <button @click="showGanttPreview = false" class="close-btn">×</button>
+    <PMModal
+      :open="showGanttPreview"
+      size="xl"
+      title="甘特图预览"
+      @update:open="(v) => (showGanttPreview = v)"
+    >
+      <div v-if="ganttLoading" class="text-center py-10 text-gray-500">加载中...</div>
+      <PMAlert v-else-if="ganttError" type="error" :message="ganttError" />
+      <div v-else class="gantt-preview">
+        <div class="flex gap-2 mb-3">
+          <PMButton variant="secondary" type="button" @click="exportGanttChart">下载 PNG</PMButton>
+          <PMButton variant="secondary" type="button" @click="exportGanttSvg">下载 SVG</PMButton>
         </div>
-        <div class="modal-body">
-          <div v-if="ganttLoading" class="loading">加载中...</div>
-          <div v-else-if="ganttError" class="error">{{ ganttError }}</div>
-          <div v-else class="gantt-preview">
-            <div class="gantt-toolbar">
-              <PMButton variant="secondary" type="button" @click="exportGanttChart">下载 PNG</PMButton>
-              <PMButton variant="secondary" type="button" @click="exportGanttSvg">下载 SVG</PMButton>
-            </div>
-            <div ref="ganttChartRef" class="gantt-chart"></div>
-          </div>
-        </div>
+        <div ref="ganttChartRef" class="gantt-chart"></div>
       </div>
-    </div>
+    </PMModal>
     </div>
   </div>
 </template>
@@ -445,8 +454,11 @@ import { computeSchedule } from '@/api/schedule';
 import { formatBeijingDateTime } from '@/utils/datetime';
 import PMButton from '@/components/pm/PMButton.vue';
 import PMCard from '@/components/pm/PMCard.vue';
+import PMAlert from '@/components/pm/PMAlert.vue';
 import PMFormField from '@/components/pm/PMFormField.vue';
 import PMInput from '@/components/pm/PMInput.vue';
+import PMModal from '@/components/pm/PMModal.vue';
+import PMTag from '@/components/pm/PMTag.vue';
 
 interface ProjectDetail {
   id: number;
@@ -1489,115 +1501,6 @@ watch([wbsItems, tasks, scheduleByTaskId, criticalTaskIds, showFlowchart], async
 </script>
 
 <style scoped>
-.error {
-  color: red;
-  margin-top: 10px;
-}
-.wbs-form {
-  margin-top: 20px;
-  padding: 10px;
-  border: 1px solid #ddd;
-}
-.wbs-form div {
-  margin-bottom: 10px;
-}
-.task-form {
-  margin-top: 20px;
-  padding: 10px;
-  border: 1px solid #ddd;
-}
-.task-form div {
-  margin-bottom: 10px;
-}
-.dependency-form {
-  margin-top: 20px;
-  padding: 10px;
-  border: 1px solid #ddd;
-}
-.dependency-form div {
-  margin-bottom: 10px;
-}
-.gantt-actions {
-  margin-top: 20px;
-  margin-bottom: 20px;
-}
-.gantt-actions button {
-  margin-right: 10px;
-}
-.project-date-form {
-  margin-top: 20px;
-  padding: 10px;
-  border: 1px solid #ddd;
-  margin-bottom: 20px;
-}
-.project-date-form label {
-  display: inline-block;
-  margin-right: 10px;
-}
-.project-date-form input[type="date"] {
-  margin-right: 10px;
-}
-.date-result {
-  margin-top: 10px;
-  font-weight: bold;
-  color: #42b983;
-}
-.wbs-date {
-  margin-left: 10px;
-  color: #666;
-  font-size: 0.9em;
-}
-/* 模态框样式 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 1000px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-}
-.modal-header {
-  padding: 20px;
-  border-bottom: 1px solid #ddd;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.modal-header h3 {
-  margin: 0;
-}
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #666;
-}
-.close-btn:hover {
-  color: #000;
-}
-.modal-body {
-  padding: 20px;
-  overflow-y: auto;
-}
-.gantt-toolbar {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
-}
 .gantt-chart {
   width: 100%;
   overflow: auto;
@@ -1608,49 +1511,6 @@ watch([wbsItems, tasks, scheduleByTaskId, criticalTaskIds, showFlowchart], async
 }
 .gantt-chart :deep(svg) {
   max-width: none; /* 允许横向滚动显示完整时间轴 */
-}
-.schedule-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 10px 0;
-}
-.schedule-summary {
-  color: #666;
-  font-size: 0.9em;
-}
-.critical-badge {
-  display: inline-block;
-  padding: 2px 6px;
-  margin-right: 6px;
-  border-radius: 10px;
-  font-size: 12px;
-  background: #ffe8e8;
-  color: #b10000;
-  border: 1px solid #ffb3b3;
-}
-.task-table tr.critical td {
-  background: #fff6f6;
-}
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-}
-
-.git-integration {
-  margin-top: 16px;
-  padding: 10px;
-  border: 1px solid #ddd;
-  margin-bottom: 16px;
-}
-.git-form > div {
-  margin-bottom: 8px;
-}
-.git-form label {
-  display: inline-block;
-  margin-right: 10px;
-  min-width: 120px;
 }
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;

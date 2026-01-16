@@ -15,7 +15,7 @@
         </div>
       </div>
 
-      <p v-if="error" class="text-sm text-red-600 mb-4">{{ error }}</p>
+      <PMAlert v-if="error" type="error" :message="error" class="mb-4" />
 
       <PMCard>
         <div class="flex items-center justify-between gap-4">
@@ -61,6 +61,7 @@ import type { ProjectDto } from '@/api/project';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import PMButton from '@/components/pm/PMButton.vue';
+import PMAlert from '@/components/pm/PMAlert.vue';
 import PMCard from '@/components/pm/PMCard.vue';
 
 const projects = ref<ProjectDto[]>([]);

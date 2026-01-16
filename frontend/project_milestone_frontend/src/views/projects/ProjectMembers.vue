@@ -9,11 +9,9 @@
         <PMButton variant="secondary" type="button" @click="goBackToProject">返回项目</PMButton>
       </div>
 
-      <p v-if="error" class="text-sm text-red-600 mb-4">{{ error }}</p>
+      <PMAlert v-if="error" type="error" :message="error" class="mb-4" />
 
-      <PMCard v-if="!isAdmin">
-        <div class="text-sm text-gray-600">仅项目管理员可管理成员。</div>
-      </PMCard>
+      <PMAlert v-if="!isAdmin" type="warning" message="仅项目管理员可管理成员。" />
 
       <PMCard v-if="isAdmin" class="mb-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
@@ -108,6 +106,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { addProjectMember, getProject, getProjectMembers, removeProjectMember, changeProjectMemberRole } from '@/api/project';
 import { getOrgUsers } from '@/api/org';
 import PMButton from '@/components/pm/PMButton.vue';
+import PMAlert from '@/components/pm/PMAlert.vue';
 import PMCard from '@/components/pm/PMCard.vue';
 import PMFormField from '@/components/pm/PMFormField.vue';
 

@@ -58,6 +58,17 @@ sudo docker exec -it gitlab gitlab-ctl reconfigure
 sudo docker exec -it gitlab grep 'Password:' /etc/gitlab/initial_root_password
 ```
 
+### 2.4 关闭注册“手动审批”（无需逐个提权）
+
+如果你不想让管理员逐个审批用户，请在 **GitLab 管理后台**关闭“需要管理员批准”：
+
+1) 以管理员登录 GitLab  
+2) 进入 **Admin Area → Settings → General → Sign-up restrictions**  
+3) 取消勾选 **Require admin approval for new sign-ups**  
+4) 保存配置  
+
+> 说明：开启注册（Sign-up enabled）但关闭审批后，新用户无需人工批准即可直接登录使用。
+
 ---
 
 ## 3. Nginx：路径分流与转发头（关键）

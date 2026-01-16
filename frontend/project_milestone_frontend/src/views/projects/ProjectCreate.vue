@@ -25,7 +25,7 @@
             />
           </PMFormField>
 
-          <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+          <PMAlert v-if="error" type="error" :message="error" />
 
           <div class="flex items-center justify-end gap-2">
             <PMButton variant="secondary" type="button" @click="cancel">取消</PMButton>
@@ -43,6 +43,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { createProject } from '@/api/project';
 import PMButton from '@/components/pm/PMButton.vue';
+import PMAlert from '@/components/pm/PMAlert.vue';
 import PMCard from '@/components/pm/PMCard.vue';
 import PMFormField from '@/components/pm/PMFormField.vue';
 import PMInput from '@/components/pm/PMInput.vue';

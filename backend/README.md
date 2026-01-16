@@ -28,6 +28,7 @@
 - **DB_USER**: MySQL 用户（默认 `root`）
 - **DB_PASSWORD**: MySQL 密码（默认 `password`）
 - **DB_NAME**: 数据库名（默认 `project_milestone`）
+- **DB_NAME_PROD**: 生产数据库名（当 `NODE_ENV=production` 时优先使用）
 - **JWT_SECRET**: JWT 签名密钥（默认 `changeme`，生产务必修改）
 - **SUPER_ADMIN_USERNAME**: 注册时若用户名等于该值，会被标记为超级管理员（可选）
 - **EMAIL_SENDER_PROVIDER**: 邮件发送通道：`smtp`（默认）或 `http`（邮件 API/自建中转）

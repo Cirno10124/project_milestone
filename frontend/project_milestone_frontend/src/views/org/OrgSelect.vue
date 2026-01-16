@@ -6,7 +6,7 @@
         <p class="text-sm text-gray-500 mt-1">组织用于隔离项目数据与成员权限。</p>
       </div>
 
-      <p v-if="error" class="text-sm text-red-600 mb-4">{{ error }}</p>
+      <PMAlert v-if="error" type="error" :message="error" class="mb-4" />
 
       <PMCard class="mb-6">
         <div class="flex items-center justify-between gap-4">
@@ -56,6 +56,7 @@ import { useRouter } from 'vue-router';
 import { createOrg, getOrgs } from '@/api/org';
 import { useAuthStore } from '@/store/auth';
 import PMButton from '@/components/pm/PMButton.vue';
+import PMAlert from '@/components/pm/PMAlert.vue';
 import PMCard from '@/components/pm/PMCard.vue';
 import PMFormField from '@/components/pm/PMFormField.vue';
 import PMInput from '@/components/pm/PMInput.vue';

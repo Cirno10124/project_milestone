@@ -8,13 +8,18 @@ if (process.env.NODE_ENV === 'production' && dbPassword === 'password') {
   throw new Error('DB_PASSWORD must be set to a non-default value in production');
 }
 
+const isProduction = process.env.NODE_ENV === 'production';
+const databaseName = isProduction
+  ? process.env.DB_NAME_PROD || process.env.DB_NAME || 'project_milestone'
+  : process.env.DB_NAME || 'project_milestone';
+
 export const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'mysql',
   host: process.env.DB_HOST || 'localhost',
   port: +(process.env.DB_PORT || 3306),
   username: process.env.DB_USER || 'root',
   password: dbPassword,
-  database: process.env.DB_NAME || 'project_milestone',
+  database: databaseName,
   entities: [__dirname + '/**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
   // 关闭自动同步，使用迁移管理表结构变更

@@ -1,45 +1,130 @@
 <template>
-  <div>
-    <h2>部门管理</h2>
-    <p v-if="error" class="error">{{ error }}</p>
-
-    <div class="create">
-      <input v-model="newName" placeholder="新部门名称" />
-      <button @click="create" :disabled="!newName">创建</button>
-    </div>
-
-    <div class="layout">
-      <div class="col">
-        <h3>部门列表</h3>
-        <ul v-if="groups.length">
-          <li v-for="g in groups" :key="g.id">
-            <button @click="select(g.id)" :class="{ active: selectedGroupId === g.id }">{{ g.name }}</button>
-          </li>
-        </ul>
-        <p v-else>暂无部门</p>
+  <div class="min-h-screen">
+    <div class="max-w-6xl mx-auto px-4 py-10">
+      <div class="mb-6">
+        <h2 class="text-2xl font-semibold text-gray-900">部门管理</h2>
+        <p class="text-sm text-gray-500 mt-1">在组织内创建部门，并管理部门成员。</p>
       </div>
 
-      <div class="col" v-if="selectedGroupId">
-        <h3>部门成员</h3>
-        <div class="add">
-          <select v-model.number="selectedUserId">
-            <option :value="0" disabled>选择组织用户</option>
-            <option v-for="u in orgUsers" :key="u.id" :value="u.id">{{ u.username }} (id={{ u.id }})</option>
-          </select>
-          <select v-model="selectedRole">
-            <option value="member">member</option>
-            <option value="admin">admin</option>
-          </select>
-          <button @click="add" :disabled="selectedUserId === 0">加入部门</button>
-        </div>
+      <PMAlert v-if="error" type="error" :message="error" class="mb-4" />
 
-        <ul v-if="members.length">
-          <li v-for="m in members" :key="m.id">
-            {{ m.username }} (id={{ m.id }}) - {{ m.role }}
-            <button @click="remove(m.id)" style="margin-left: 8px;">移除</button>
-          </li>
-        </ul>
-        <p v-else>暂无成员</p>
+      <PMCard class="mb-6">
+        <div class="flex items-end justify-between gap-4">
+          <div class="flex-1">
+            <PMFormField label="新建部门" required helpText="需要组织管理员权限。">
+              <PMInput v-model="newName" placeholder="新部门名称" />
+            </PMFormField>
+          </div>
+          <div class="shrink-0">
+            <PMButton variant="primary" type="button" :disabled="!newName" @click="create">
+              创建
+            </PMButton>
+          </div>
+        </div>
+      </PMCard>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        <PMCard>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">部门列表</h3>
+            <span class="text-sm text-gray-500">{{ groups.length }} 个</span>
+          </div>
+
+          <div v-if="groups.length" class="mt-4 divide-y divide-gray-200">
+            <button
+              v-for="g in groups"
+              :key="g.id"
+              type="button"
+              class="w-full text-left py-3 flex items-center justify-between gap-3 hover:bg-gray-50 rounded-lg px-2"
+              :class="selectedGroupId === g.id ? 'bg-blue-50' : ''"
+              @click="select(g.id)"
+            >
+              <div class="min-w-0">
+                <div class="font-medium text-gray-900 truncate">{{ g.name }}</div>
+                <div class="text-xs text-gray-500">部门 ID：{{ g.id }}</div>
+              </div>
+              <PMButton variant="ghost" type="button" @click.stop="select(g.id)">
+                {{ selectedGroupId === g.id ? '已选择' : '选择' }}
+              </PMButton>
+            </button>
+          </div>
+          <p v-else class="mt-4 text-sm text-gray-500">暂无部门</p>
+        </PMCard>
+
+        <PMCard>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">部门成员</h3>
+            <span class="text-sm text-gray-500">
+              {{ selectedGroupId ? `${members.length} 人` : '未选择部门' }}
+            </span>
+          </div>
+
+          <PMAlert v-if="!selectedGroupId" type="info" message="请先在左侧选择一个部门。" class="mt-4" />
+
+          <div v-else class="mt-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+              <PMFormField label="选择组织用户" required>
+                <select
+                  v-model.number="selectedUserId"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option :value="0" disabled>选择组织用户</option>
+                  <option v-for="u in orgUsers" :key="u.id" :value="u.id">
+                    {{ u.username }} (id={{ u.id }})
+                  </option>
+                </select>
+              </PMFormField>
+
+              <PMFormField label="角色" required>
+                <select
+                  v-model="selectedRole"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="member">member</option>
+                  <option value="admin">admin</option>
+                </select>
+              </PMFormField>
+
+              <div class="flex justify-end">
+                <PMButton variant="primary" type="button" :disabled="selectedUserId === 0" @click="add">
+                  加入部门
+                </PMButton>
+              </div>
+            </div>
+
+            <div class="mt-6 overflow-x-auto">
+              <table class="w-full border-collapse">
+                <thead>
+                  <tr class="bg-gray-50 border-b border-gray-200">
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">用户</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">角色</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">操作</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  <tr
+                    v-for="m in members"
+                    :key="m.id"
+                    class="hover:bg-gray-50 transition-colors duration-150"
+                  >
+                    <td class="px-4 py-3 text-sm text-gray-700">
+                      {{ m.username }} (id={{ m.id }})
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                      <PMTag :color="m.role === 'admin' ? 'blue' : 'gray'">{{ m.role }}</PMTag>
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                      <PMButton variant="danger" type="button" @click="remove(m.id)">移除</PMButton>
+                    </td>
+                  </tr>
+                  <tr v-if="members.length === 0">
+                    <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500">暂无成员</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </PMCard>
       </div>
     </div>
   </div>
@@ -49,6 +134,12 @@
 import { onMounted, ref } from 'vue';
 import { createGroup, getGroups, addGroupMember, removeGroupMember } from '@/api/group';
 import { getOrgUsers } from '@/api/org';
+import PMAlert from '@/components/pm/PMAlert.vue';
+import PMButton from '@/components/pm/PMButton.vue';
+import PMCard from '@/components/pm/PMCard.vue';
+import PMFormField from '@/components/pm/PMFormField.vue';
+import PMInput from '@/components/pm/PMInput.vue';
+import PMTag from '@/components/pm/PMTag.vue';
 
 const groups = ref<Array<{ id: number; name: string }>>([]);
 const members = ref<Array<{ id: number; username: string; role: 'admin' | 'member' }>>([]);
@@ -133,15 +224,7 @@ onMounted(async () => {
 });
 </script>
 
-<style scoped>
-.error { color: red; }
-.create { display:flex; gap: 8px; margin: 12px 0; }
-.layout { display:flex; gap: 24px; }
-.col { min-width: 280px; }
-.col ul { padding-left: 16px; }
-.active { font-weight: bold; }
-.add { display:flex; gap: 8px; margin: 10px 0; }
-</style>
+<style scoped></style>
 
 
 

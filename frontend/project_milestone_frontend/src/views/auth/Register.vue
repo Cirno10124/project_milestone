@@ -69,7 +69,7 @@
             />
           </div>
 
-          <p v-if="error" class="pm-error">{{ error }}</p>
+          <PMAlert v-if="error" type="error" :message="error" />
 
           <div class="pm-actions pm-actions--right">
             <PMButton variant="secondary" type="button" @click="goToLogin">返回登录</PMButton>
@@ -86,6 +86,7 @@ import { reactive, ref, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/auth';
 import { sendEmailCode } from '@/api/auth';
+import PMAlert from '@/components/pm/PMAlert.vue';
 import PMButton from '@/components/pm/PMButton.vue';
 import { defineOptions } from 'vue';
 defineOptions({ name: 'RegisterPage' });
