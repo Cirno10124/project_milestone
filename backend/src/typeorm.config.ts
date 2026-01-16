@@ -12,6 +12,9 @@ const isProduction = process.env.NODE_ENV === 'production';
 const databaseName = isProduction
   ? process.env.DB_NAME_PROD || process.env.DB_NAME || 'project_milestone'
   : process.env.DB_NAME || 'project_milestone';
+const migrationsPath = isProduction
+  ? __dirname + '/migrations/*.js'
+  : __dirname + '/../migrations/*{.ts,.js}';
 
 export const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'mysql',
@@ -21,7 +24,7 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
   password: dbPassword,
   database: databaseName,
   entities: [__dirname + '/**/*.entity{.ts,.js}'],
-  migrations: [__dirname + '/../migrations/*{.ts,.js}'],
+  migrations: [migrationsPath],
   // 关闭自动同步，使用迁移管理表结构变更
   synchronize: false,
   migrationsRun: true,
